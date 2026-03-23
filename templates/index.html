@@ -1,0 +1,3991 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaForge - 因子挖掘实验室</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; min-height: 100vh; }
+
+        /* 整体布局 - 左侧边栏 */
+        .app-layout { display: flex; min-height: 100vh; min-width: 0; }
+
+        /* 左侧边栏 */
+        .sidebar { width: 220px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); color: white; display: flex; flex-direction: column; box-shadow: 2px 0 8px rgba(0,0,0,0.1); }
+        .sidebar-logo { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-logo h1 { font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+        .sidebar-logo p { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+
+        .sidebar-nav { flex: 1; padding: 16px 0; }
+        .sidebar-nav-title { padding: 8px 20px; font-size: 11px; text-transform: uppercase; opacity: 0.5; letter-spacing: 1px; }
+        .sidebar-nav-item { display: flex; align-items: center; padding: 12px 20px; color: rgba(255,255,255,0.8); font-size: 14px; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; }
+        .sidebar-nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .sidebar-nav-item.active { background: rgba(24,144,255,0.15); color: #1890ff; border-left-color: #1890ff; }
+        .sidebar-nav-item .icon { margin-right: 12px; font-size: 16px; }
+        .sidebar-nav-item .badge { margin-left: auto; background: #ff4d4f; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-user { display: flex; align-items: center; gap: 10px; }
+        .sidebar-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #1890ff, #52c41a); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .sidebar-user-info { flex: 1; }
+        .sidebar-user-name { font-size: 13px; font-weight: 500; }
+        .sidebar-user-role { font-size: 11px; opacity: 0.6; }
+
+        /* 主内容区 */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-x: auto; min-width: 0; }
+        .main-header { background: white; padding: 16px 24px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .main-title { font-size: 18px; font-weight: 600; }
+        .main-actions { display: flex; gap: 12px; }
+
+        .container { padding: 16px 24px 0; max-width: 100%; overflow-x: hidden; box-sizing: border-box; min-width: 0; width: 100%; }
+        .page-content { flex: 1; padding: 24px; max-width: 100%; overflow-x: hidden; box-sizing: border-box; min-width: 0; }
+        .page-content .card { max-width: 100%; }
+
+        /* 步骤条 */
+        .step-container { background: white; padding: 12px 24px; margin-bottom: 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; }
+        .step-container .step-bar { margin: 0; justify-content: flex-start; }
+        .step-bar { display: flex; justify-content: center; align-items: center; }
+        .step-item { display: flex; align-items: center; padding: 0 16px; position: relative; cursor: pointer; transition: all 0.2s; }
+        .step-item:hover { transform: translateY(-2px); }
+        .step-item:hover .step-circle { transform: scale(1.1); }
+        .step-item::after { content: ''; position: absolute; right: -8px; top: 50%; transform: translateY(-50%); width: 20px; height: 2px; background: #e8e8e8; }
+        .step-item:last-child::after { display: none; }
+        .step-item.finish::after { background: #1890ff; }
+        .step-item::before { content: ''; position: absolute; left: 0; top: 0; right: 0; bottom: 0; border-radius: 4px; }
+        .step-item:hover::before { background: rgba(24, 144, 255, 0.05); }
+        .step-circle { width: 28px; height: 28px; border-radius: 50%; background: #e8e8e8; color: #999; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; margin-right: 8px; transition: all 0.3s; flex-shrink: 0; }
+        .step-item.active .step-circle { background: #1890ff; color: white; box-shadow: 0 2px 8px rgba(24, 144, 255, 0.4); }
+        .step-item.finish .step-circle { background: #52c41a; color: white; }
+        .step-label { color: #999; font-size: 13px; transition: all 0.3s; }
+        .step-item.active .step-label { color: #1890ff; font-weight: 500; }
+        .step-item.finish .step-label { color: #52c41a; }
+
+        /* 因子库页面：去掉步骤条和内容的间距 */
+
+        /* 卡片 */
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); width: 100%; max-width: 100%; overflow-x: auto; box-sizing: border-box; min-width: 0; }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: #1f1f1f; }
+
+        /* 聊天区域 */
+        .chat-container { display: flex; flex-direction: column; height: 500px; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 16px; background: #fafafa; border-radius: 12px; margin-bottom: 16px; }
+
+        .message { display: flex; margin-bottom: 16px; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message.ai { align-items: flex-start; }
+        .message.user { align-items: flex-end; flex-direction: row-reverse; }
+
+        .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; margin: 0 12px; flex-shrink: 0; }
+        .avatar.ai { background: linear-gradient(135deg, #1890ff, #52c41a); color: white; }
+        .avatar.user { background: linear-gradient(135deg, #722ed1, #eb2f96); color: white; }
+
+        .message-content { max-width: 70%; }
+        .message-bubble { padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+        .message.ai .message-bubble { background: white; border: 1px solid #e8e8e8; border-top-left-radius: 4px; }
+        .message.user .message-bubble { background: #1890ff; color: white; border-top-right-radius: 4px; }
+        .message-time { font-size: 11px; color: #999; margin-top: 4px; }
+
+        /* 假设候选 */
+        .hypothesis-candidate { background: white; border: 1px solid #e8e8e8; border-radius: 10px; padding: 16px; margin-top: 12px; cursor: pointer; transition: all 0.3s; }
+        .hypothesis-candidate:hover { border-color: #1890ff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(24,144,255,0.15); }
+        .hypothesis-candidate.selected { border-color: #1890ff; background: #e6f7ff; }
+        .hypothesis-candidate.editing { cursor: default; }
+        .hypothesis-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .hypothesis-name { font-weight: 600; font-size: 15px; }
+        .confidence-badge { padding: 2px 8px; border-radius: 4px; font-size: 12px; background: #fffbe6; color: #faad14; }
+        .hypothesis-edit-btn { font-size: 12px; padding: 3px 10px; border-radius: 4px; border: 1px solid #d9d9d9; background: white; color: #666; cursor: pointer; transition: all 0.2s; }
+        .hypothesis-edit-btn:hover { border-color: #1890ff; color: #1890ff; }
+        .hypothesis-edit-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; color: #555; }
+        .hypothesis-edit-row label { width: 70px; flex-shrink: 0; color: #999; font-size: 12px; }
+        .hypothesis-edit-row input, .hypothesis-edit-row textarea { flex: 1; padding: 6px 10px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px; outline: none; resize: vertical; }
+        .hypothesis-edit-row input:focus, .hypothesis-edit-row textarea:focus { border-color: #1890ff; }
+        .hypothesis-edit-actions { display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end; }
+        .hypothesis-edit-actions button { padding: 5px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; border: none; transition: all 0.2s; }
+        .hypothesis-save-btn { background: #1890ff; color: white; }
+        .hypothesis-save-btn:hover { background: #40a9ff; }
+        .hypothesis-cancel-btn { background: #f0f0f0; color: #666; }
+        .hypothesis-cancel-btn:hover { background: #e0e0e0; }
+
+        /* 快速提示 */
+        .quick-prompts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .quick-prompt { padding: 6px 12px; background: #f0f0f0; border: none; border-radius: 16px; font-size: 12px; color: #666; cursor: pointer; transition: all 0.2s; }
+        .quick-prompt:hover { background: #1890ff; color: white; }
+
+        /* 聊天输入 */
+        .chat-input-area { display: flex; gap: 12px; }
+        .chat-input { flex: 1; padding: 12px 16px; border: 1px solid #d9d9d9; border-radius: 24px; font-size: 14px; outline: none; transition: border-color 0.3s; }
+        .chat-input:focus { border-color: #1890ff; }
+        .send-btn { width: 48px; height: 48px; border-radius: 50%; background: #1890ff; color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.3s; }
+        .send-btn:hover { background: #40a9ff; transform: scale(1.05); }
+        .send-btn:disabled { background: #d9d9d9; cursor: not-allowed; transform: none; }
+
+        /* 代码编辑器 */
+        .code-editor-container { border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; }
+        .code-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: #f5f5f5; border-bottom: 1px solid #e8e8e8; }
+        .code-toolbar-left { display: flex; gap: 8px; }
+        .code-filename { font-size: 13px; font-weight: 500; color: #333; display: flex; align-items: center; gap: 8px; }
+        .code-editor { width: 100%; min-height: 300px; padding: 16px; background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; line-height: 1.6; border: none; outline: none; resize: vertical; }
+
+        /* 代码状态 */
+        .code-status { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-dot.success { background: #52c41a; }
+        .status-dot.warning { background: #faad14; }
+        .status-dot.error { background: #ff4d4f; }
+
+        /* 代码动作按钮 */
+        .code-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+        /* 代码对话框 */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.hidden { display: none; }
+        .modal { background: white; border-radius: 12px; width: 90%; max-width: 600px; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 16px; font-weight: 600; }
+        .modal-close { width: 32px; height: 32px; border: none; background: none; font-size: 20px; cursor: pointer; color: #999; }
+        .modal-close:hover { color: #333; }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 16px 20px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 12px; }
+
+        /* 修改建议输入 */
+        .suggestion-input { width: 100%; min-height: 120px; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; line-height: 1.6; resize: vertical; }
+        .suggestion-input:focus { outline: none; border-color: #1890ff; }
+
+        /* 建议示例 */
+        .suggestion-examples { margin-top: 12px; }
+        .suggestion-examples-title { font-size: 12px; color: #999; margin-bottom: 8px; }
+        .suggestion-example { display: inline-block; padding: 4px 10px; background: #f0f0f0; border-radius: 4px; font-size: 12px; color: #666; margin: 4px; cursor: pointer; transition: all 0.2s; }
+        .suggestion_example:hover { background: #1890ff; color: white; }
+        .quick-data-prompt { display: inline-block; padding: 4px 10px; background: #f0f0f0; border-radius: 4px; font-size: 12px; color: #666; margin: 4px; cursor: pointer; transition: all 0.2s; }
+        .quick-data-prompt:hover { background: #1890ff; color: white; }
+
+        /* 代码对话 */
+        .code-chat-container { max-height: 200px; overflow-y: auto; margin-bottom: 16px; padding: 12px; background: #fafafa; border-radius: 8px; }
+        .code-chat-msg { margin-bottom: 12px; }
+        .code-chat-msg:last-child { margin-bottom: 0; }
+        .code-chat-role { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+        .code-chat-role.ai { color: #1890ff; }
+        .code-chat-role.user { color: #722ed1; }
+        .code-chat-content { font-size: 13px; color: #666; padding: 8px 12px; background: white; border-radius: 6px; border: 1px solid #e8e8e8; }
+
+        /* 按钮 */
+        .btn { padding: 8px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; transition: all 0.3s; border: 1px solid #d9d9d9; background: white; }
+        .btn:hover { border-color: #40a9ff; color: #40a9ff; }
+        .btn-primary { background: #1890ff; color: white; border: none; }
+        .btn-primary:hover { background: #40a9ff; }
+        .btn-primary:disabled { background: #d9d9d9; cursor: not-allowed; }
+        .btn-lg { padding: 12px 32px; font-size: 16px; }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
+        .btn-secondary { background: #f0f0f0; color: #666; border: 1px solid #d9d9d9; }
+        .btn-secondary:hover { background: #e8e8e8; color: #333; }
+
+        /* 指标卡片 */
+        .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
+        .metric-card { background: #fafafa; padding: 14px 10px; border-radius: 8px; text-align: center; }
+        .metric-value { font-size: 20px; font-weight: 700; color: #1890ff; }
+        .metric-label { font-size: 11px; color: #888; margin-top: 4px; }
+        .metric-card.warning .metric-value { color: #faad14; }
+        .metric-card.success .metric-value { color: #52c41a; }
+        .metric-card.error .metric-value { color: #f5222d; }
+
+        /* 图表 */
+        .chart-container { background: #fafafa; border-radius: 10px; padding: 12px; margin-top: 16px; }
+        .chart-box { width: 100%; height: 580px; }
+
+        /* 热力图 */
+
+        /* 表格 */
+        .table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        .table th, .table td { padding: 14px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+        .table th { background: #fafafa; font-weight: 600; color: #333; }
+
+        /* 警告框 */
+        .alert { padding: 14px 18px; border-radius: 8px; margin: 16px 0; display: flex; align-items: flex-start; gap: 12px; }
+        .alert-success { background: #f6ffed; border: 1px solid #b7eb8f; color: #52c41a; }
+        .alert-error { background: #fff1f0; border: 1px solid #ffccc7; color: #ff4d4f; }
+        .alert-warning { background: #fffbe6; border: 1px solid #ffe58f; color: #faad14; }
+        .alert-info { background: #e6f7ff; border: 1px solid #91d5ff; color: #1890ff; }
+
+        /* 加载 */
+        .loading { display: flex; align-items: center; gap: 12px; padding: 16px; }
+        .spinner { width: 20px; height: 20px; border: 2px solid #e8e8e8; border-top-color: #1890ff; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* 导航 */
+        .nav-buttons { display: flex; justify-content: space-between; margin-top: 24px; padding-top: 20px; border-top: 1px solid #f0f0f0; }
+
+        /* 描述 */
+        .desc-row { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 12px; }
+        .desc-item { display: flex; gap: 8px; }
+        .desc-label { color: #666; }
+        .desc-value { font-weight: 500; }
+
+        /* 标签 */
+        .tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .tag-gold { background: #fffbe6; color: #faad14; }
+        .tag-blue { background: #e6f7ff; color: #1890ff; }
+        .tag-green { background: #f6ffed; color: #52c41a; }
+        .tag-red { background: #fff2f0; color: #ff4d4f; }
+
+        /* 因子库 */
+        .factor-lib-item { border: 1px solid #f0f0f0; border-radius: 8px; padding: 14px 16px; margin: 0 0 12px 0; transition: box-shadow 0.2s; }
+        .factor-lib-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .factor-lib-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .factor-lib-name { font-weight: 600; font-size: 15px; }
+        .factor-lib-class { background: #e6f7ff; color: #1890ff; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .factor-lib-time { margin-left: auto; color: #999; font-size: 12px; }
+        .factor-lib-metrics { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+        .factor-lib-metrics .metric-chip { background: #f5f5f5; padding: 3px 10px; border-radius: 4px; font-size: 12px; }
+        .factor-lib-metrics .metric-chip.ok { background: #f6ffed; color: #52c41a; }
+        .factor-lib-metrics .metric-chip.warn { background: #fffbe6; color: #faad14; }
+        .factor-lib-actions { display: flex; gap: 8px; }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
+        .btn-danger { color: #ff4d4f; border: 1px solid #ff4d4f; background: transparent; }
+        .btn-danger:hover { background: #fff2f0; }
+
+        /* 进度条 */
+        .progress-wrap { margin: 8px 0; }
+
+        /* 日志面板 */
+        #optimize-log-content::-webkit-scrollbar { width: 6px; }
+        #optimize-log-content::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+        @keyframes optimize-slide {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+        .optimize-pulse-bar {
+            height: 6px;
+            background: linear-gradient(90deg, #1890ff, #52c41a, #1890ff);
+            background-size: 200% 100%;
+            animation: optimize-slide 1.5s ease-in-out infinite;
+            border-radius: 3px;
+        }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #1890ff, #52c41a); transition: width 0.3s; }
+
+        /* 隐藏 */
+        .hidden { display: none !important; }
+
+        /* 设置页表单 */
+        .settings-section { margin-bottom: 24px; }
+        .settings-section-title { font-size: 13px; font-weight: 600; color: #1f1f1f; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid #f0f0f0; }
+        .settings-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .settings-label { min-width: 140px; font-size: 13px; color: #555; text-align: right; }
+        .settings-input { flex: 1; padding: 6px 10px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px; max-width: 400px; }
+        .settings-input:focus { border-color: #1890ff; outline: none; box-shadow: 0 0 0 2px rgba(24,144,255,0.15); }
+
+        /* 确认框 */
+        .confirm-box { background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 10px; padding: 16px; margin-top: 16px; text-align: center; }
+
+        /* 切换按钮 */
+        .toggle-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+        .toggle-tab { padding: 10px 20px; border: 1px solid #d9d9d9; border-radius: 8px; background: white; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .toggle-tab:hover { border-color: #1890ff; color: #1890ff; }
+        .toggle-tab.active { background: #1890ff; color: white; border-color: #1890ff; }
+
+        /* 数据预览表格 */
+        .data-preview { max-height: 300px; overflow: auto; margin-top: 16px; border: 1px solid #e8e8e8; border-radius: 8px; box-sizing: border-box; display: block; min-width: 0; }
+        .data-preview table { border-collapse: collapse; font-size: 12px; table-layout: auto; width: 100%; }
+        .data-preview th, .data-preview td { padding: 8px 12px; text-align: center; border-bottom: 1px solid #e8e8e8; white-space: nowrap; }
+        .data-preview th { background: #f5f5f5; font-weight: 600; position: sticky; top: 0; z-index: 10; }
+        .data-preview td:first-child { background: #f5f5f5; font-weight: 500; position: sticky; left: 0; z-index: 5; }
+        .data-preview th:first-child { background: #f5f5f5; font-weight: 600; position: sticky; left: 0; z-index: 15; }
+        .data-preview tr:hover td { background: #fafafa; }
+
+        /* 图表 Y轴药片标签 */
+        .chart-pill {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            cursor: pointer;
+            border: 1px solid #d9d9d9;
+            background: white;
+            color: #666;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .chart-pill:hover { border-color: #1890ff; color: #1890ff; }
+        .chart-pill.selected {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        /* 分页样式 */
+        .page-btn {
+            padding: 2px 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background: white;
+            color: #666;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .page-btn:hover { border-color: #1890ff; color: #1890ff; }
+        .page-btn.active {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <!-- 整体布局 -->
+    <div class="app-layout">
+        <!-- 左侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <h1>AlphaForge</h1>
+                <p>AI 驱动量化因子挖掘</p>
+            </div>
+
+            <div class="sidebar-nav">
+                <div class="sidebar-nav-title">功能菜单</div>
+                <div class="sidebar-nav-item active" data-page="factor-lab">
+                    <span class="icon">🔬</span>因子实验室
+                </div>
+                <div class="sidebar-nav-item" data-page="factor-lib">
+                    <span class="icon">📚</span>因子库
+                </div>
+                <div class="sidebar-nav-item" data-page="history">
+                    <span class="icon">📊</span>历史记录
+                </div>
+
+                <div class="sidebar-nav-title" style="margin-top: 16px;">系统</div>
+                <div class="sidebar-nav-item" data-page="settings">
+                    <span class="icon">⚙️</span>设置
+                </div>
+                <div class="sidebar-nav-item" data-page="help">
+                    <span class="icon">❓</span>帮助中心
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="sidebar-avatar">U</div>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name">用户</div>
+                        <div class="sidebar-user-role">免费版</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <div class="main-header">
+                <div class="main-title" id="page-title">因子实验室</div>
+                <div class="main-actions">
+                    <button class="btn btn-sm">🔔 通知</button>
+                </div>
+            </div>
+
+            <div class="container">
+                <!-- 步骤条 -->
+                <div class="step-container">
+                    <div class="step-bar">
+                        <div class="step-item active" data-step="0">
+                            <div class="step-circle">1</div>
+                    <span class="step-label">假设生成</span>
+                </div>
+                <div class="step-item" data-step="1">
+                    <div class="step-circle">2</div>
+                    <span class="step-label">数据准备</span>
+                </div>
+                <div class="step-item" data-step="2">
+                    <div class="step-circle">3</div>
+                    <span class="step-label">代码生成</span>
+                </div>
+                <div class="step-item" data-step="3">
+                    <div class="step-circle">4</div>
+                    <span class="step-label">回测验证</span>
+                </div>
+                <div class="step-item" data-step="4">
+                    <div class="step-circle">5</div>
+                    <span class="step-label">因子优化</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 步骤1: 假设生成 -->
+        <div class="step-content" id="step-0">
+            <div class="card">
+                <div class="card-title" style="display:flex;align-items:center;gap:12px;">
+                    <span>💬 智能假设生成器</span>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:normal;color:#666;cursor:pointer;">
+                        <input type="checkbox" id="test-mode-toggle">
+                        <span>测试模式</span>
+                    </label>
+                </div>
+                <p style="color: #666; margin-bottom: 16px;">通过与 AI 对话，逐步明确你的因子想法</p>
+
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="message ai">
+                            <div class="avatar ai">AI</div>
+                            <div class="message-content">
+                                <div class="message-bubble">你好！我是 AlphaForge 的因子分析师。<br><br>请告诉我你观察到的<strong>市场规律</strong>或<strong>交易想法</strong>，比如：<br>• "当国债收益率曲线变得平坦时..."<br>• "某品种成交量突然放大后..."<br><br>越详细的描述，能生成越精准的因子假设！</div>
+                                <div class="message-time">AlphaForge</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-area">
+                        <input type="text" class="chat-input" id="chat-input" placeholder="描述你的市场想法...">
+                        <button class="send-btn" id="send-btn">➤</button>
+                        <button class="btn btn-primary" id="generate-hypothesis-btn">🎯 提取假设</button>
+                        <button class="btn btn-secondary" id="reset-conversation-btn" title="重置对话记忆">🔄 重置</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="hypothesis-confirm">
+                <div class="card-title">✅ 生成的假设候选</div>
+                <div id="hypothesis-list"><p style="color: #999; text-align: center; padding: 20px;">点击上方「🎯 提取假设」按钮提取候选假设</p></div>
+                <div class="confirm-box">
+                    <p style="margin-bottom: 12px;">选择满意的假设后，点击确认继续</p>
+                    <button class="btn btn-primary btn-lg" id="confirm-hypothesis" disabled>确认并准备数据 →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 步骤2: 数据准备 -->
+        <div class="step-content hidden" id="step-1">
+            <!-- 数据源选项卡 -->
+            <div class="toggle-tabs">
+                <button class="toggle-tab active" data-tab="sample">📦 样本数据</button>
+                <button class="toggle-tab" data-tab="code">💻 代码获取</button>
+                <button class="toggle-tab" data-tab="upload">📁 导入文件</button>
+            </div>
+
+            <!-- 样本数据模式 -->
+            <div class="data-tab" id="tab-sample">
+                <div class="card">
+                    <div class="card-title">📦 样本数据</div>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; align-items: flex-start; gap: 8px; padding: 16px; border: 1px solid #e8e8e8; border-radius: 8px; background: #e6f7ff; cursor: pointer;">
+                            <input type="radio" checked style="margin-top: 4px;">
+                            <div>
+                                <strong>国债期货 T.CHT</strong>
+                                <p style="font-size: 12px; color: #666; margin: 4px 0;">2020-2024 日线数据 | 1,217 个交易日 | 包含: date, open, high, low, close, volume, return</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="load-sample" style="margin-top: 16px;">加载样本数据</button>
+                </div>
+            </div>
+
+            <!-- 代码获取数据模式 -->
+            <div class="data-tab hidden" id="tab-code">
+                <div class="card">
+                    <div class="card-title">💻 通过代码获取数据</div>
+                    <p style="color: #666; margin-bottom: 16px;">编写 Python 代码从数据库/API 获取数据，返回 DataFrame</p>
+
+                    <div class="code-editor-container">
+                        <div class="code-toolbar">
+                            <div class="code-toolbar-left">
+                                <div class="code-filename">
+                                    <span>📄</span>
+                                    <span>data_loader.py</span>
+                                </div>
+                                <div class="code-status" id="data-code-status">
+                                    <span class="status-dot warning"></span>
+                                    <span>待运行</span>
+                                </div>
+                            </div>
+                        </div>
+                        <textarea class="code-editor" id="data-code-editor" style="min-height: 220px;">import pandas as pd
+
+# 数据库连接配置
+DB_CONFIG = {
+    'host': 'localhost',
+    'port': 3306,
+    'user': 'root',
+    'password': 'your_password',
+    'database': 'futures_data'
+}
+
+def load_data() -> pd.DataFrame:
+    """
+    从数据库加载数据
+    返回包含以下列的 DataFrame:
+    - date: 日期
+    - open/high/low/close:  OHLC价格
+    - volume: 成交量
+    - return: 收益率
+    """
+    query = """
+        SELECT
+            trade_date as date,
+            open, high, low, close,
+            volume,
+            pct_change as `return`
+        FROM futures_daily
+        WHERE symbol = 'T.CHT'
+          AND trade_date BETWEEN '2020-01-01' AND '2024-12-31'
+        ORDER BY trade_date
+    """
+
+    # 方法1: 使用 SQLAlchemy
+    # from sqlalchemy import create_engine
+    # engine = create_engine(f"mysql+pymysql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}")
+    # df = pd.read_sql(query, engine)
+
+    # 方法2: 使用 pymysql
+    # import pymysql
+    # conn = pymysql.connect(**DB_CONFIG)
+    # df = pd.read_sql(query, conn)
+    # conn.close()
+
+    # 示例：使用模拟数据
+    dates = pd.date_range('2020-01-01', '2024-12-31', freq='B')
+    df = pd.DataFrame({
+        'date': dates,
+        'open': 100 + np.random.randn(len(dates)).cumsum(),
+        'high': 102 + np.random.randn(len(dates)).cumsum(),
+        'low': 98 + np.random.randn(len(dates)).cumsum(),
+        'close': 100 + np.random.randn(len(dates)).cumsum(),
+        'volume': np.random.randint(10000, 100000, len(dates)),
+        'return': np.random.randn(len(dates)) * 0.01
+    })
+
+    return df
+
+if __name__ == '__main__':
+    data = load_data()
+    print(f"加载数据: {len(data)} 条")
+    print(data.head())</textarea>
+                    </div>
+
+                    <!-- 代码操作按钮 -->
+                    <div class="code-actions">
+                        <button class="btn btn-primary" id="run-data-code">▶️ 运行代码</button>
+                        <button class="btn btn-secondary" id="btn-ask-llm">
+                            🤖 让 AI 生成代码
+                        </button>
+                    </div>
+
+                    <!-- AI 对话区 -->
+                    <div id="data-code-chat" class="code-chat-container hidden" style="margin-top: 16px;">
+                        <!-- 对话消息会动态添加 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 导入文件模式 -->
+            <div class="data-tab hidden" id="tab-upload">
+                <div class="card">
+                    <div class="card-title">📁 导入数据文件</div>
+                    <div id="data-config">
+                        <div style="border: 2px dashed #d9d9d9; border-radius: 12px; padding: 40px; text-align: center; background: #fafafa;" id="drop-zone">
+                            <p style="font-size: 32px; margin-bottom: 12px;">📂</p>
+                            <p style="color: #666;">拖拽文件到此处或点击上传</p>
+                            <p style="font-size: 12px; color: #999; margin-top: 8px;">支持 CSV, Excel (.xlsx, .xls) 格式</p>
+                            <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display: none;">
+                            <div style="margin-top: 12px;">
+                                <label style="font-size: 13px; color: #666; cursor: pointer; display: block; margin-bottom: 12px; text-align: center;">
+                                    <input type="checkbox" id="read-index-checkbox">
+                                    读取第一列为index
+                                </label>
+                                <button class="btn btn-primary" id="select-file-btn">选择文件</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据概览 -->
+            <div class="card" id="data-overview">
+                <div class="card-title">📈 数据概览</div>
+                <div class="metric-grid" id="data-metrics">
+                    <div class="metric-card">
+                        <div class="metric-value" id="data-count">—</div>
+                        <div class="metric-label">数据点数</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="data-cols">—</div>
+                        <div class="metric-label">字段数量</div>
+                    </div>
+                </div>
+
+                <div class="data-preview" id="data-preview-wrapper">
+                    <table id="data-preview-table">
+                        <thead id="preview-header">
+                            <tr>
+                                <th style="position: sticky; top: 0; background: #f5f5f5; z-index: 10;">#</th>
+                            </tr>
+                        </thead>
+                        <tbody id="preview-body">
+                            <tr>
+                                <td colspan="1" style="text-align: center; color: #999; padding: 20px;">
+                                    请先加载数据...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分页 -->
+                <div id="table-pagination" style="display: none; align-items: center; justify-content: space-between; margin-top: 12px;">
+                    <span id="page-info" style="font-size: 13px; color: #666;"></span>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <button class="btn btn-sm" id="page-prev">上一页</button>
+                        <div id="page-numbers" style="display: flex; gap: 4px;"></div>
+                        <button class="btn btn-sm" id="page-next">下一页</button>
+                        <span style="font-size: 13px; color: #666;">跳到</span>
+                        <input id="page-jump-input" type="number" min="1" style="width: 64px; padding: 4px 8px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 13px; text-align: center;">
+                        <span style="font-size: 13px; color: #666;" id="page-jump-total"></span>
+                        <button class="btn btn-sm" id="page-jump-btn">跳转</button>
+                    </div>
+                </div>
+
+                <!-- 数据可视化 -->
+                <div class="card-title" style="margin-top: 24px;">📊 数据可视化</div>
+                <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label style="font-size: 13px; color: #666; white-space: nowrap;">X轴：</label>
+                        <select id="chart-x-col" style="padding: 6px 10px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px; min-width: 130px;">
+                            <option value="">— 选择字段 —</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <select id="chart-type" style="padding: 6px 10px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px;">
+                            <option value="line">折线图</option>
+                            <option value="bar">柱状图</option>
+                            <option value="scatter">散点图</option>
+                        </select>
+                        <button class="btn btn-primary btn-sm" id="chart-render-btn">绘图</button>
+                        <button class="btn btn-secondary btn-sm" id="chart-reset-zoom-btn">重置缩放</button>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <label style="font-size: 13px; color: #666; white-space: nowrap; padding-top: 4px;">Y轴：</label>
+                    <div id="chart-y-pills" style="display: flex; flex-wrap: wrap; gap: 6px; max-height: 96px; overflow-y: auto; max-width: 100%;"></div>
+                </div>
+                <div id="data-chart" style="height: 320px; border: 1px solid #e8e8e8; border-radius: 8px; overflow: hidden; margin-top: 12px;"></div>
+            </div>
+
+            <!-- 因子代码生成中状态 -->
+            <div id="code-generating-status" class="loading hidden" style="margin: 12px 0;">
+                <div class="spinner"></div>
+                <span>⚙️ 正在生成因子代码...</span>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn" id="back-to-0">← 返回</button>
+                <button class="btn btn-primary" id="to-step-2">下一步: 生成代码 →</button>
+            </div>
+        </div>
+
+        <!-- 步骤3: 代码生成 -->
+        <div class="step-content hidden" id="step-2">
+            <div class="card">
+                <div class="card-title">📄 生成因子代码</div>
+
+                <!-- 代码编辑区 -->
+                <div id="code-result" style="position:relative;">
+                    <!-- 加载状态叠加层 -->
+                    <div id="code-loading" class="loading hidden" style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.85);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:12px;">
+                        <div style="text-align:center;">
+                            <div class="spinner" style="margin:0 auto 8px;"></div>
+                            <span>LLM 正在生成代码...</span>
+                        </div>
+                    </div>
+                    <!-- 无数据提示 -->
+                    <div id="no-data-hint" class="hidden" style="background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:16px;margin-bottom:12px;color:#ad8b00;">
+                        ⚠️ 未检测到数据集，请先返回步骤2「数据准备」加载数据后再点击「生成代码」
+                    </div>
+
+                    <!-- 手动触发生成代码按钮 -->
+                    <button class="btn btn-primary" id="btn-gen-code" style="margin-bottom:12px;">
+                        ⚙️ 生成代码
+                    </button>
+
+                    <div class="code-editor-container">
+                        <div class="code-toolbar">
+                            <div class="code-toolbar-left">
+                                <div class="code-filename">
+                                    <span>📄</span>
+                                    <span>因子代码.py</span>
+                                </div>
+                                <div class="code-status">
+                                    <span class="status-dot warning"></span>
+                                    <span>待生成</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm" id="btn-save-code" style="display:none; background:#52c41a;color:white;border:none;padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer;">💾 保存</button>
+                        </div>
+                        <textarea class="code-editor" id="code-editor" placeholder="请先生成因子代码..."></textarea>
+                    </div>
+
+                    <div class="code-actions">
+                        <button class="btn btn-sm" id="btn-validate">
+                            ✅ 验证代码
+                        </button>
+                        <button class="btn btn-sm" id="btn-suggest">
+                            💬 提出修改
+                        </button>
+                        <button class="btn btn-sm" id="btn-copy">
+                            📋 复制代码
+                        </button>
+                    </div>
+
+                    <!-- 代码对话区 -->
+                    <div id="code-chat" class="code-chat-container hidden">
+                    </div>
+
+                </div>
+
+                <!-- 日志面板（在遮罩外，代码区底部） -->
+                <div id="code-log-panel" class="hidden" style="margin-top:12px; border:1px solid #e8e8e8; border-radius:8px; overflow:hidden;">
+                    <div style="background:#f5f5f5; padding:6px 12px; display:flex;align-items:center;justify-content:space-between;">
+                        <span style="color:#666; font-size:12px;">📋 生成日志</span>
+                        <button id="btn-clear-log" style="background:none;border:none;color:#999;cursor:pointer;font-size:12px;">清空</button>
+                    </div>
+                    <div id="code-log-content" style="background:#1e1e1e; color:#d4d4d4; font-family:Consolas,Monaco,monospace; font-size:12px; line-height:1.8; padding:8px 12px; max-height:160px; overflow-y:auto; white-space:pre-wrap;"></div>
+                </div>
+            </div>
+
+            <div class="alert alert-success hidden" id="run-result">
+                <span>✅</span>
+                <div>
+                    <strong>试运行通过</strong>
+                    <p style="margin: 4px 0 0 0; font-size: 13px;">因子在样本数据上正常运行</p>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn" id="back-to-1">← 返回</button>
+                <button class="btn btn-primary" id="to-step-3">下一步: 回测验证 →</button>
+            </div>
+        </div>
+
+        <!-- 步骤4: 回测验证 -->
+        <div class="step-content hidden" id="step-3">
+            <div class="card">
+                <div class="card-title">⚙️ 回测配置</div>
+                <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    <div>
+                        <span style="font-size: 13px; color: #555;">时间列: </span>
+                        <select id="time-col-select" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 120px;">
+                            <option value="auto">自动检测</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span style="font-size: 13px; color: #555;">价格列: </span>
+                        <select id="price-col-select" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 120px;">
+                            <option value="auto">自动检测</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span style="font-size: 13px; color: #555;">预测周期: </span>
+                        <input id="horizon-input" type="number" value="5" min="1" max="60" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; width: 70px;">
+                    </div>
+                    <div>
+                        <span style="font-size: 13px; color: #555;">IC窗口: </span>
+                        <input id="window-input" type="number" value="60" min="10" max="500" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; width: 70px;">
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-lg" id="run-backtest" style="margin-top: 16px;">🚀 开始回测</button>
+            </div>
+
+            <div class="card hidden" id="backtest-result">
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">—</div>
+                        <div class="metric-label">IC均值</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">—</div>
+                        <div class="metric-label">IC标准差</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">—</div>
+                        <div class="metric-label">IR</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">—</div>
+                        <div class="metric-label">IC胜率</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">—</div>
+                        <div class="metric-label">资本利得</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">—</div>
+                        <div class="metric-label">年化收益</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">—</div>
+                        <div class="metric-label">胜率</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">—</div>
+                        <div class="metric-label">盈亏比</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">—</div>
+                        <div class="metric-label">夏普比率</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">—</div>
+                        <div class="metric-label">最大回撤</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">—</div>
+                        <div class="metric-label">换手率</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div id="ic-chart" class="chart-box"></div>
+                </div>
+
+                <div class="alert alert-error">
+                    <span>❌</span>
+                    <div>
+                        <strong>未通过检验</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 13px;">需要优化参数或重新提取假设</p>
+                    </div>
+                </div>
+
+                <!-- 数据概览表格 -->
+                <div style="margin-top: 16px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span style="font-size: 13px; font-weight: bold; color: #333;">📋 数据概览</span>
+                    </div>
+                    <div id="bkt-table-wrap" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 6px;">
+                        <table id="bkt-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <thead id="bkt-table-head" style="position: sticky; top: 0; background: #f5f5f5; z-index: 1;"></thead>
+                            <tbody id="bkt-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-buttons" id="backtest-nav">
+                <button class="btn" id="back-to-2">← 返回</button>
+                <button class="btn btn-primary" id="to-step-4">下一步: 因子优化 →</button>
+            </div>
+        </div>
+
+        <!-- 步骤5: 因子优化 -->
+        <div class="step-content hidden" id="step-4">
+            <div class="card" id="diagnosis-card">
+                <div class="card-title">🔍 AI 诊断结果</div>
+                <div class="alert alert-info" id="diagnosis-placeholder">
+                    <span>ℹ️</span>
+                    <div>
+                        <strong>尚未运行诊断</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 13px;">请先在步骤4「回测验证」完成回测，然后点击下方按钮进行 AI 诊断分析。</p>
+                    </div>
+                </div>
+                <div id="diagnosis-result" class="hidden">
+                    <div class="diagnosis-metrics" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+                        <span class="metric-chip" id="diag-ic" style="background:#f0f0f0; padding:4px 10px; border-radius:6px; font-size:13px;"></span>
+                        <span class="metric-chip" id="diag-ir" style="background:#f0f0f0; padding:4px 10px; border-radius:6px; font-size:13px;"></span>
+                        <span class="metric-chip" id="diag-score" style="background:#f0f0f0; padding:4px 10px; border-radius:6px; font-size:13px;"></span>
+                        <span class="tag" id="diag-status" style="margin-left:auto;"></span>
+                    </div>
+                    <div id="diagnosis-issues" style="margin-bottom:8px;"></div>
+                    <div id="diagnosis-suggestions"></div>
+                </div>
+                <button class="btn btn-outline" id="run-diagnosis" style="margin-top:12px;">
+                    🤖 运行 AI 诊断
+                </button>
+            </div>
+
+            <div class="card" id="param-config-card">
+                <div class="card-title">⚙️ 参数搜索配置</div>
+                <div id="detected-params-info" style="margin-bottom: 12px; color: #8c8c8c; font-size: 13px;">
+                    将在优化开始时自动从因子代码中识别参数
+                </div>
+                <div id="detected-params-display" style="margin-bottom: 16px;"></div>
+                <div>
+                    <span>优化目标: </span>
+                    <label><input type="radio" name="target" value="sharpe_ratio" checked> 夏普比率</label>
+                    <label style="margin-left: 12px;"><input type="radio" name="target" value="max_drawdown"> 最大回撤</label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <span>最大迭代次数: </span>
+                    <input id="max-iterations-input" type="number" value="2" min="1" max="5" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; width: 60px;">
+                </div>
+                <button class="btn btn-primary btn-lg" id="start-optimize" style="margin-top: 20px;">🚀 开始优化</button>
+            </div>
+
+            <!-- 优化卡片（合并进度状态+日志） -->
+            <div class="card" id="optimize-card">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <div class="card-title" id="optimize-card-title" style="margin-bottom:0;">⚙️ 优化状态</div>
+                    <button id="btn-clear-optimize-log" style="background:none;border:none;color:#999;cursor:pointer;font-size:12px;">清空</button>
+                </div>
+                <div id="optimize-progress-bar" style="margin-bottom:8px;display:none;">
+                    <div class="optimize-pulse-bar"></div>
+                </div>
+                <div id="optimize-log-content" style="background:#1e1e1e; color:#d4d4d4; font-family:Consolas,Monaco,monospace; font-size:12px; line-height:1.8; padding:8px 12px; max-height:240px; overflow-y:auto; white-space:pre-wrap; border-radius:6px;"><span style="color:#666;">点击「🚀 开始优化」后将显示实时日志...</span></div>
+            </div>
+
+            <div class="card hidden" id="optimize-result">
+                <div class="card-title">
+                    🏆 最优参数
+                    <span class="tag tag-gold" id="optimize-score">—</span>
+                </div>
+                <div class="desc-row" id="optimize-params">
+                    <span style="color:#999;font-size:13px;">—</span>
+                </div>
+            </div>
+
+            <div class="card hidden" id="comparison-card">
+                <div class="card-title">📈 优化前后对比</div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>指标</th>
+                            <th>优化前</th>
+                            <th>优化后</th>
+                            <th>变化</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comparison-tbody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn" id="back-to-3">← 返回回测</button>
+                <button class="btn btn-primary" id="save-factor-btn">💾 保存因子</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 因子库页面 -->
+    <div class="page-content hidden" id="page-factor-lib">
+        <div class="card" style="margin-top: 0;">
+            <div class="card-title">📚 因子库</div>
+            <div id="factor-lib-empty" style="text-align:center; padding: 40px 0; color: #999;">
+                <div style="font-size: 48px; margin-bottom: 12px;">📭</div>
+                <div style="font-size: 15px;">因子库为空</div>
+                <div style="font-size: 13px; margin-top: 6px;">在步骤5「因子优化」中保存因子后可在这里查看</div>
+            </div>
+            <div id="factor-lib-list" class="hidden" style="margin-top: 0;"></div>
+        </div>
+    </div>
+
+    <!-- 历史记录页 -->
+    <div class="page-content hidden" id="page-history">
+        <div class="card" style="margin-top: 0;">
+            <div class="card-title">📋 历史记录</div>
+            <div id="history-empty" style="text-align:center; padding: 40px 0; color: #999;">
+                <div style="font-size: 48px; margin-bottom: 12px;">📭</div>
+                <div style="font-size: 15px;">暂无历史记录</div>
+                <div style="font-size: 13px; margin-top: 6px;">完成因子回测后可在这里查看历史</div>
+            </div>
+            <div id="history-list" class="hidden"></div>
+        </div>
+    </div>
+
+    <!-- 设置页 -->
+    <div class="page-content hidden" id="page-settings">
+        <div class="card" style="margin-top: 0;">
+            <div class="card-title">⚙️ 系统设置</div>
+            <div id="settings-loading" style="text-align:center;padding:40px 0;color:#999;">加载中...</div>
+            <div id="settings-form" style="display:none;">
+                <!-- LLM 配置区 -->
+                <div class="settings-section">
+                    <div class="settings-section-title">🤖 LLM 配置</div>
+                    <div class="settings-row">
+                        <label class="settings-label">模型</label>
+                        <select class="settings-input" id="s-MODEL_NAME">
+                            <option value="claude-sonnet">claude-sonnet</option>
+                            <option value="claude-haiku">claude-haiku</option>
+                            <option value="gpt-4">gpt-4</option>
+                            <option value="gpt-4o">gpt-4o</option>
+                            <option value="custom">custom（自定义）</option>
+                        </select>
+                    </div>
+                    <div id="settings-official-keys" style="display:none;">
+                        <div class="settings-row">
+                            <label class="settings-label">Anthropic API Key</label>
+                            <input type="password" class="settings-input" id="s-ANTHROPIC_API_KEY" placeholder="sk-ant-...">
+                        </div>
+                        <div class="settings-row">
+                            <label class="settings-label">OpenAI API Key</label>
+                            <input type="password" class="settings-input" id="s-OPENAI_API_KEY" placeholder="sk-...">
+                        </div>
+                    </div>
+                    <div id="settings-custom-keys">
+                        <div class="settings-row">
+                            <label class="settings-label">自定义模型名</label>
+                            <input type="text" class="settings-input" id="s-CUSTOM_MODEL_NAME" placeholder="如 MiniMax-M2.7">
+                        </div>
+                        <div class="settings-row">
+                            <label class="settings-label">自定义 API Key</label>
+                            <input type="password" class="settings-input" id="s-CUSTOM_API_KEY" placeholder="第三方 API Key">
+                        </div>
+                        <div class="settings-row">
+                            <label class="settings-label">自定义接口地址</label>
+                            <input type="text" class="settings-input" id="s-CUSTOM_BASE_URL" placeholder="如 https://api.minimaxi.com/v1">
+                        </div>
+                    </div>
+                    <div class="settings-row">
+                        <label class="settings-label">Max Tokens</label>
+                        <input type="number" class="settings-input" id="s-MAX_TOKENS" min="100" max="200000">
+                    </div>
+                    <div class="settings-row">
+                        <label class="settings-label">Temperature</label>
+                        <input type="number" class="settings-input" id="s-TEMPERATURE" min="0" max="2" step="0.1">
+                    </div>
+                </div>
+                <!-- 数据配置区 -->
+                <div class="settings-section">
+                <!-- 路径配置区 -->
+                <div class="settings-section">
+                    <div class="settings-section-title">📁 路径配置</div>
+                    <div class="settings-row">
+                        <label class="settings-label">因子目录</label>
+                        <input type="text" class="settings-input" id="s-FACTORS_DIR">
+                    </div>
+                    <div class="settings-row">
+                        <label class="settings-label">数据目录</label>
+                        <input type="text" class="settings-input" id="s-DATA_DIR">
+                    </div>
+                    <div class="settings-row">
+                        <label class="settings-label">输出目录</label>
+                        <input type="text" class="settings-input" id="s-OUTPUT_DIR">
+                    </div>
+                </div>
+                <div style="margin-top:20px;display:flex;gap:12px;">
+                    <button class="btn btn-primary" id="settings-save-btn">💾 保存配置</button>
+                    <span id="settings-msg" style="line-height:36px;color:#52c41a;font-size:13px;"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 帮助页 -->
+    <div class="page-content hidden" id="page-help">
+        <div class="card" style="margin-top: 0;">
+            <div class="card-title">❓ 帮助中心</div>
+            <div style="padding: 20px 0;">
+                <div style="color: #999; text-align: center;">帮助中心开发中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改建议对话框 -->
+    <div class="modal-overlay hidden" id="suggestion-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">💬 提出代码修改意见</span>
+                <button class="modal-close" id="close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 12px; color: #666;">描述你对代码的修改要求：</p>
+                <textarea class="suggestion-input" id="suggestion-input" placeholder="例如：
+• 将窗口参数改为 20 和 60
+• 添加止损逻辑
+• 增加平滑处理
+• 修改为做多逻辑"></textarea>
+
+                <div class="suggestion-examples">
+                    <div class="suggestion-examples-title">快速建议（点击使用）：</div>
+                    <span class="suggestion-example" data="将 window_short 改为 15">改 window_short=15</span>
+                    <span class="suggestion-example" data="将 window_long 改为 60">改 window_long=60</span>
+                    <span class="suggestion-example" data="添加 5 日平滑处理">添加平滑</span>
+                    <span class="suggestion-example" data="修改为正相关（做多逻辑）">改为做多</span>
+                    <span class="suggestion-example" data="增加止损逻辑，跌破 2% 时止损">添加止损</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-suggestion">取消</button>
+                <button class="btn btn-primary" id="submit-suggestion">提交修改 →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LLM 数据代码生成对话框 -->
+    <div class="modal-overlay hidden" id="llm-data-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">🤖 AI 生成数据获取代码</span>
+                <button class="modal-close" id="close-llm-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 12px; color: #666;">描述你的数据来源需求：</p>
+                <textarea class="suggestion-input" id="llm-data-input" placeholder="例如：
+• 从 MySQL 获取国债期货T.CHT数据
+• 连接 PostgreSQL 读取行情数据
+• 从 API 获取实时数据
+• 从 SQLite 本地数据库读取"></textarea>
+
+                <div class="suggestion-examples">
+                    <div class="suggestion-examples-title">快速提示（点击使用）：</div>
+                    <span class="quick-data-prompt" data-dsrc="MySQL 国债期货T.CHT 2020-2024年">MySQL 国债期货</span>
+                    <span class="quick-data-prompt" data-dsrc="PostgreSQL 期货行情数据">PostgreSQL 行情</span>
+                    <span class="quick-data-prompt" data-dsrc="SQLite 本地数据库读取">SQLite 本地</span>
+                    <span class="quick-data-prompt" data-dsrc="REST API 获取数据">REST API</span>
+                    <span class="quick-data-prompt" data-dsrc="从 CSV 文件读取数据">CSV 文件</span>
+                    <span class="quick-data-prompt" data-dsrc="从 Excel 文件读取数据">Excel 文件</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-llm-data">取消</button>
+                <button class="btn btn-primary" id="submit-llm-data">生成代码 →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+    <script>
+        // ==================== API 配置 ====================
+        const API_BASE = '';
+
+        // ==================== 状态 ====================
+        let currentStep = 0;
+        let selectedHypothesis = null;
+        let icChart = null;
+        let step = 0;
+        let codeModified = false;
+        let currentFactorCode = null;
+        let currentFactorName = null;
+        let currentClassName = null;
+        let currentParams = {};
+        let codeGenerating = false;  // 标记因子代码是否正在生成
+        let generationCancelled = false;  // 标记是否已离开生成页面
+
+        // 测试模式
+        let testMode = false;
+        const TEST_HYPOTHESIS = [
+            { id: 'h1', name: '债券价格动量因子', english_name: 'BondPriceMomentumFactor', logic: '债券价格上涨后有动量效应，当价格持续上行时未来大概率继续上涨；债券价格下跌后继续下跌。', data_req: ['close'], direction: '正相关', confidence: 75, formula_idea: '1. 计算过去 N 日价格变化率：ret = (close - close.shift(N)) / close.shift(N)\n2. 动量信号 = ret\n3. 动量越强，未来收益越高' }
+        ];
+
+        // 假设候选（从API获取）
+        let hypothesisCandidates = [];
+        let sessionId = 'default';
+        let hypothesesShown = false; // 标记是否已经显示过假设候选
+
+        // ==================== 聊天功能 ====================
+        function addMessage(content, isAI = true) {
+            const messages = document.getElementById('chat-messages');
+            const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isAI ? 'ai' : 'user'}`;
+            messageDiv.innerHTML = `
+                <div class="avatar ${isAI ? 'ai' : 'user'}">${isAI ? 'AI' : '你'}</div>
+                <div class="message-content">
+                    <div class="message-bubble">${content}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function addLoading() {
+            const messages = document.getElementById('chat-messages');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message ai';
+            loadingDiv.id = 'loading-msg';
+            loadingDiv.innerHTML = `
+                <div class="avatar ai">AI</div>
+                <div class="message-content">
+                    <div class="loading" style="padding: 8px 16px;">
+                        <div class="spinner"></div>
+                        <span>AI 思考中...</span>
+                    </div>
+                </div>
+            `;
+            messages.appendChild(loadingDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function removeLoading() {
+            const loading = document.getElementById('loading-msg');
+            if (loading) loading.remove();
+        }
+
+        // 辅助函数：格式化文本
+        function formatText(text) {
+            if (!text) return '';
+            // HTML转义
+            let formatted = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            // 换行处理
+            return formatted.replace(/\n/g, '<br>');
+        }
+
+        // 简单的同步消息处理
+        async function handleUserMessage(text) {
+            // 如果已经显示过假设候选，重置状态
+            if (hypothesesShown) {
+                hypothesesShown = false;
+                step = 0;
+            }
+
+            // 测试模式：直接返回样本假设
+            if (testMode) {
+                addMessage(text, false);
+                addMessage('【测试模式】收到您的想法，这是示例假设候选：');
+                hypothesisCandidates = [...TEST_HYPOTHESIS];
+                showHypothesisCandidates();
+                return;
+            }
+
+            addMessage(text, false);
+            addLoading();
+
+            try {
+                // 调用后端API - 同步版本
+                const response = await fetch(API_BASE + '/api/hypothesis/chat_simple', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text, step: step, session_id: sessionId })
+                });
+                const data = await response.json();
+
+                removeLoading();
+
+                if (data.success) {
+                    addMessage(data.response, true);
+                    step = data.step;
+                    if (data.session_id) sessionId = data.session_id;
+                } else {
+                    addMessage("抱歉，发生了错误: " + data.error, true);
+                }
+            } catch (error) {
+                console.log('API调用失败:', error);
+                removeLoading();
+                // 使用本地模拟
+                handleUserMessageLocal(text);
+            }
+        }
+
+        // 本地模拟逻辑（当API不可用时）
+        function handleUserMessageLocal(text) {
+            if (step === 0) {
+                addMessage("收到！我来帮你分析这个想法。你希望这个因子主要预测价格方向还是收益幅度？");
+                step = 1;
+            } else if (step === 1) {
+                addMessage("理解了。关于时间周期，你偏好短期(1-5天)、中期(10-30天)还是长期(60天以上)？");
+                step = 2;
+            } else if (step === 2) {
+                addMessage("好的。根据你的描述，我生成了以下假设候选：");
+                showHypothesisCandidatesLocal();
+                step = 0;
+            } else if (step >= 3) {
+                addMessage("收到调整意见，让我重新提取假设...");
+                showHypothesisCandidatesLocal();
+            }
+        }
+
+        // 提取假设（调用API）
+        async function generateHypotheses(userInput) {
+            // 测试模式：直接返回样本
+            if (testMode) {
+                hypothesisCandidates = [...TEST_HYPOTHESIS];
+                showHypothesisCandidates();
+                return;
+            }
+            try {
+                const response = await fetch(API_BASE + '/api/hypothesis/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_input: userInput, n_hypotheses: 3 })
+                });
+                const data = await response.json();
+
+                if (data.success && data.hypotheses.length > 0) {
+                    hypothesisCandidates = data.hypotheses;
+                    showHypothesisCandidates();
+                } else {
+                    // 使用默认假设
+                    hypothesisCandidates = [
+                        { id: 'h1', name: '曲线平坦度因子', logic: '计算 10日-30日移动平均斜率，斜率变平时做空', data_req: ['close_10d', 'close_30d'], direction: '负相关', confidence: 85 },
+                        { id: 'h2', name: '期限利差因子', logic: '短期-长期利差扩大时做空', data_req: ['short_rate', 'long_rate'], direction: '负相关', confidence: 78 },
+                        { id: 'h3', name: '波动率反转因子', logic: '波动率急剧上升后反转做多', data_req: ['volatility', 'volume'], direction: '正相关', confidence: 72 },
+                    ];
+                    showHypothesisCandidates();
+                }
+            } catch (error) {
+                console.log('API调用失败，使用默认假设:', error);
+                hypothesisCandidates = [
+                    { id: 'h1', name: '曲线平坦度因子', logic: '计算 10日-30日移动平均斜率，斜率变平时做空', data_req: ['close_10d', 'close_30d'], direction: '负相关', confidence: 85 },
+                    { id: 'h2', name: '期限利差因子', logic: '短期-长期利差扩大时做空', data_req: ['short_rate', 'long_rate'], direction: '负相关', confidence: 78 },
+                    { id: 'h3', name: '波动率反转因子', logic: '波动率急剧上升后反转做多', data_req: ['volatility', 'volume'], direction: '正相关', confidence: 72 },
+                ];
+                showHypothesisCandidates();
+            }
+        }
+
+        // 本地显示假设候选（默认数据）
+        function showHypothesisCandidatesLocal() {
+            hypothesisCandidates = [
+                { id: 'h1', name: '曲线平坦度因子', logic: '计算 10日-30日移动平均斜率，斜率变平时做空', data_req: ['close_10d', 'close_30d'], direction: '负相关', confidence: 85 },
+                { id: 'h2', name: '期限利差因子', logic: '短期-长期利差扩大时做空', data_req: ['short_rate', 'long_rate'], direction: '负相关', confidence: 78 },
+                { id: 'h3', name: '波动率反转因子', logic: '波动率急剧上升后反转做多', data_req: ['volatility', 'volume'], direction: '正相关', confidence: 72 },
+            ];
+            hypothesesShown = true;
+            showHypothesisCandidates();
+        }
+
+        // 从API获取假设候选
+        async function fetchHypothesesFromAPI() {
+            // 测试模式：直接返回样本
+            if (testMode) {
+                removeLoading();
+                hypothesisCandidates = [...TEST_HYPOTHESIS];
+                addMessage("根据以上讨论，我生成了以下假设候选（测试模式）：");
+                hypothesesShown = true;
+                showHypothesisCandidates();
+                return;
+            }
+            try {
+                const response = await fetch(API_BASE + '/api/hypothesis/extract', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                const data = await response.json();
+
+                if (data.success && data.hypotheses && data.hypotheses.length > 0) {
+                    // 使用API返回的假设
+                    hypothesisCandidates = data.hypotheses;
+                    addMessage("根据以上讨论，我生成了以下假设候选：");
+                    hypothesesShown = true;
+                    showHypothesisCandidates();
+                } else {
+                    // API返回为空，提示用户先进行对话
+                    removeLoading();
+                    addMessage("没有检测到对话内容，无法提取假设。请先在对话框中描述您的策略思路。", true);
+                }
+            } catch (error) {
+                removeLoading();
+                addMessage("提取假设失败，请检查网络连接后重试。", true);
+            } finally {
+                removeLoading();
+            }
+        }
+
+        function showHypothesisCandidates() {
+            const list = document.getElementById('hypothesis-list');
+            renderHypothesisList(list, false, null);
+        }
+
+        function renderHypothesisList(list, editing, editingId) {
+            list.innerHTML = hypothesisCandidates.map(h => {
+                const isSelected = h.id === selectedHypothesis;
+                const isEditing = editing && h.id === editingId;
+
+                if (isEditing) {
+                    return `
+                    <div class="hypothesis-candidate editing selected" data-id="${h.id}">
+                        <div class="hypothesis-header">
+                            <span class="hypothesis-name" style="color:#1890ff;font-size:13px;">✏️ 编辑中</span>
+                        </div>
+                        <div class="hypothesis-edit-row">
+                            <label>名称</label>
+                            <input type="text" id="edit-name" value="${escapeHtml(h.name)}" placeholder="因子名称，如：债券价格动量因子">
+                        </div>
+                        <div class="hypothesis-edit-row">
+                            <label>英文名</label>
+                            <input type="text" id="edit-english" value="${escapeHtml(h.english_name || '')}" placeholder="类名，如：BondMomentumFactor">
+                        </div>
+                        <div class="hypothesis-edit-row">
+                            <label>逻辑</label>
+                            <textarea id="edit-logic" rows="3" placeholder="描述因子的逻辑和设计思路">${escapeHtml(h.logic)}</textarea>
+                        </div>
+                        <div class="hypothesis-edit-row">
+                            <label>数据需求</label>
+                            <input type="text" id="edit-data" value="${escapeHtml(Array.isArray(h.data_req) ? h.data_req.join(', ') : (h.data_req || ''))}" placeholder="所需数据列，如：close, volume">
+                        </div>
+                        <div class="hypothesis-edit-row">
+                            <label>方向</label>
+                            <input type="text" id="edit-direction" value="${escapeHtml(h.direction || '')}" placeholder="正相关 / 负相关">
+                        </div>
+                        <div class="hypothesis-edit-row">
+                            <label>置信度</label>
+                            <input type="number" id="edit-confidence" value="${h.confidence || 70}" min="0" max="100" style="width:80px;">
+                        </div>
+                        <div class="hypothesis-edit-actions">
+                            <button class="hypothesis-cancel-btn" data-cancel="${h.id}">取消</button>
+                            <button class="hypothesis-save-btn" data-save="${h.id}">💾 保存</button>
+                        </div>
+                    </div>`;
+                }
+
+                return `
+                <div class="hypothesis-candidate ${isSelected ? 'selected' : ''}" data-id="${h.id}">
+                    <div class="hypothesis-header">
+                        <span class="hypothesis-name">${h.name}</span>
+                        <span>
+                            <button class="hypothesis-edit-btn" data-edit="${h.id}">✏️ 修改</button>
+                            <span class="confidence-badge">⭐ ${h.confidence}%</span>
+                        </span>
+                    </div>
+                    <p style="color: #666; font-size: 13px; margin: 8px 0;">${h.logic}</p>
+                    <p style="font-size: 12px; color: #999;">📁 ${Array.isArray(h.data_req) ? h.data_req.join(', ') : h.data_req} | 🎯 ${h.direction}</p>
+                </div>`;
+            }).join('');
+
+            // 选择卡片
+            list.querySelectorAll('.hypothesis-candidate:not(.editing)').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    if (e.target.closest('.hypothesis-edit-btn')) return;
+                    list.querySelectorAll('.hypothesis-candidate').forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedHypothesis = this.dataset.id;
+                    document.getElementById('confirm-hypothesis').disabled = false;
+                });
+            });
+
+            // 修改按钮
+            list.querySelectorAll('[data-edit]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    renderHypothesisList(list, true, this.dataset.edit);
+                });
+            });
+
+            // 保存按钮
+            list.querySelectorAll('[data-save]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const id = this.dataset.save;
+                    const h = hypothesisCandidates.find(x => x.id === id);
+                    if (!h) return;
+                    const newDataReq = document.getElementById('edit-data').value.split(',').map(s => s.trim()).filter(Boolean);
+                    hypothesisCandidates = hypothesisCandidates.map(x => x.id === id ? {
+                        ...x,
+                        name: document.getElementById('edit-name').value.trim() || x.name,
+                        english_name: document.getElementById('edit-english').value.trim() || x.english_name,
+                        logic: document.getElementById('edit-logic').value.trim() || x.logic,
+                        data_req: newDataReq.length > 0 ? newDataReq : x.data_req,
+                        direction: document.getElementById('edit-direction').value.trim() || x.direction,
+                        confidence: parseInt(document.getElementById('edit-confidence').value) || x.confidence
+                    } : x);
+                    renderHypothesisList(list, false, null);
+                });
+            });
+
+            // 取消按钮
+            list.querySelectorAll('[data-cancel]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    renderHypothesisList(list, false, null);
+                });
+            });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // 事件绑定
+        document.getElementById('send-btn').addEventListener('click', function() {
+            const input = document.getElementById('chat-input');
+            if (input.value.trim()) {
+                handleUserMessage(input.value.trim());
+                input.value = '';
+            }
+        });
+
+        document.getElementById('chat-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                handleUserMessage(this.value.trim());
+                this.value = '';
+            }
+        });
+
+        // 测试模式开关
+        document.getElementById('test-mode-toggle').addEventListener('change', function() {
+            testMode = this.checked;
+            const msg = testMode
+                ? '✅ 测试模式已开启：对话和提取假设将直接返回示例'
+                : '❌ 测试模式已关闭';
+            addMessage(msg, true);
+        });
+
+        document.querySelectorAll('.quick-prompt').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('chat-input').value = this.dataset.prompt;
+                handleUserMessage(this.dataset.prompt);
+            });
+        });
+
+        // 提取假设按钮 - 手动触发 generator.extract()
+        document.getElementById('generate-hypothesis-btn').addEventListener('click', function() {
+            // 检查是否有用户消息（至少要有一段对话才能提取假设）
+            const userMessages = document.querySelectorAll('#chat-messages .message.user');
+            if (userMessages.length === 0) {
+                alert('请先在对话框中描述您的策略思路，然后再来提取假设');
+                return;
+            }
+            addMessage("请根据以上讨论提取因子假设", false);
+            addLoading();
+            fetchHypothesesFromAPI();
+        });
+
+        // 重置对话按钮
+        document.getElementById('reset-conversation-btn').addEventListener('click', async function() {
+            if (!confirm('确定要重置对话记忆吗？将清空当前所有对话历史。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(API_BASE + '/api/hypothesis/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    // 重置前端状态
+                    sessionId = 'default';
+                    hypothesisCandidates = [];
+                    step = 0;
+                    hypothesesShown = false;
+
+                    // 清空假设候选区域
+                    document.getElementById('hypothesis-list').innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">点击上方「🎯 提取假设」按钮提取候选假设</p>';
+                    document.getElementById('confirm-hypothesis').disabled = true;
+                    selectedHypothesis = null;
+
+                    // 清空聊天记录，只保留欢迎消息
+                    const messages = document.getElementById('chat-messages');
+                    messages.innerHTML = `
+                        <div class="message ai">
+                            <div class="avatar ai">AI</div>
+                            <div class="message-content">
+                                <div class="message-bubble">对话已重置！<br><br>请告诉我你观察到的<strong>市场规律</strong>或<strong>交易想法</strong>。</div>
+                                <div class="message-time">AlphaForge</div>
+                            </div>
+                        </div>
+                    `;
+
+                    alert('对话已重置');
+                } else {
+                    alert('重置失败: ' + data.error);
+                }
+            } catch (error) {
+                alert('重置失败: ' + error.message);
+            }
+        });
+
+        document.getElementById('confirm-hypothesis').addEventListener('click', function() {
+            // 获取选中的假设
+            const selected = hypothesisCandidates.find(h => h.id === selectedHypothesis);
+            if (!selected) {
+                alert('请选择一个假设');
+                return;
+            }
+            // 只跳转到数据准备步骤，不触发代码生成
+            goToStep(1);
+        });
+
+        // ==================== 代码编辑功能 ====================
+        const codeEditor = document.getElementById('code-editor');
+        let originalCode = codeEditor.value;
+        let codeValidated = false;  // 代码是否被验证过
+
+        // 统一更新状态栏显示
+        function updateCodeStatus() {
+            const statusEl = document.querySelector('.code-status');
+            if (!statusEl) return;
+            if (codeValidated && !codeModified) {
+                statusEl.innerHTML = `<span class="status-dot success"></span><span>已验证通过</span>`;
+            } else if (codeModified) {
+                statusEl.innerHTML = `<span class="status-dot warning"></span><span>已修改（待验证）</span>`;
+            }
+        }
+
+        // 监听代码修改
+        codeEditor.addEventListener('input', function() {
+            if (this.value !== originalCode) {
+                codeModified = true;
+            } else {
+                codeModified = false;
+            }
+            document.getElementById('run-result')?.classList.add('hidden');
+            updateCodeStatus();
+            // 显示/隐藏保存按钮
+            const saveBtn = document.getElementById('btn-save-code');
+            if (saveBtn) saveBtn.style.display = codeModified ? 'inline-block' : 'none';
+        });
+
+        // 保存代码按钮
+        document.getElementById('btn-save-code').addEventListener('click', function() {
+            originalCode = codeEditor.value;
+            currentFactorCode = codeEditor.value;  // 同步更新 currentFactorCode，切回时用它恢复
+            codeModified = false;
+            updateCodeStatus();
+            this.style.display = 'none';
+            // 短暂提示已保存
+            const statusEl = document.querySelector('.code-status');
+            if (statusEl) {
+                const orig = statusEl.innerHTML;
+                statusEl.innerHTML = `<span class="status-dot success"></span><span>已保存</span>`;
+                setTimeout(() => { statusEl.innerHTML = orig.replace('warning', 'success').replace('已修改（待验证）', '已验证通过'); }, 1500);
+            }
+        });
+
+        // 验证代码按钮
+        document.getElementById('btn-validate').addEventListener('click', async function() {
+            const code = document.getElementById('code-editor').value;
+            if (!code || code.includes('请先生成因子代码')) {
+                alert('请先生成或输入因子代码');
+                return;
+            }
+            if (!tableData) {
+                alert('请先返回步骤2「数据准备」加载数据');
+                return;
+            }
+
+            this.disabled = true;
+            this.textContent = '验证中...';
+
+            const resultDiv = document.getElementById('run-result');
+            resultDiv.classList.add('hidden');
+
+            try {
+                // 准备样本数据（前200行）
+                const columns = tableData.columns || [];
+                const sample_data = {};
+                columns.forEach(col => {
+                    sample_data[col] = (tableData.data[col] || []).slice(0, 200);
+                });
+
+                const response = await fetch(API_BASE + '/api/factor/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code: code,
+                        class_name: currentClassName || 'Factor',
+                        params: {},
+                        data: sample_data
+                    })
+                });
+                const result = await response.json();
+
+                const currentStatus = document.querySelector('.code-status');
+
+                if (result.success) {
+                    originalCode = code;
+                    codeModified = false;
+                    codeValidated = true;
+                    document.getElementById('btn-save-code').style.display = 'none';
+                    currentStatus.innerHTML = `
+                        <span class="status-dot success"></span>
+                        <span>验证通过</span>
+                    `;
+                    resultDiv.classList.remove('hidden');
+                    resultDiv.className = 'alert alert-success';
+                    resultDiv.innerHTML = `
+                        <span>✅</span>
+                        <div>
+                            <strong>验证通过</strong>
+                            <p style="margin: 4px 0 0 0; font-size: 13px;">
+                                因子计算成功，共 ${result.count} 条结果
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    currentStatus.innerHTML = `
+                        <span class="status-dot error"></span>
+                        <span>验证失败</span>
+                    `;
+                    resultDiv.classList.remove('hidden');
+                    resultDiv.className = 'alert alert-error';
+                    resultDiv.innerHTML = `
+                        <span>❌</span>
+                        <div>
+                            <strong>验证失败</strong>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; color: #cf1322;">
+                                ${result.error || '未知错误'}
+                            </p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('验证失败:', error);
+                const currentStatus = document.querySelector('.code-status');
+                currentStatus.innerHTML = `
+                    <span class="status-dot error"></span>
+                    <span>验证失败</span>
+                `;
+                resultDiv.classList.remove('hidden');
+                resultDiv.className = 'alert alert-error';
+                resultDiv.innerHTML = `
+                    <span>❌</span>
+                    <div>
+                        <strong>验证失败</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 13px; color: #cf1322;">
+                            ${error.message}
+                        </p>
+                    </div>
+                `;
+            } finally {
+                this.disabled = false;
+                this.textContent = '✅ 验证代码';
+            }
+        });
+
+        // 复制代码按钮
+        document.getElementById('btn-copy').addEventListener('click', function() {
+            const code = document.getElementById('code-editor').value;
+            if (!code || code.includes('请先生成因子代码')) {
+                alert('没有可复制的代码');
+                return;
+            }
+
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = this.innerHTML;
+                this.innerHTML = '✅ 已复制';
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                }, 2000);
+            }).catch(err => {
+                alert('复制失败: ' + err);
+            });
+        });
+
+        // ==================== 修改建议对话框 ====================
+        const modal = document.getElementById('suggestion-modal');
+        const suggestionInput = document.getElementById('suggestion-input');
+
+        // 打开对话框
+        document.getElementById('btn-suggest').addEventListener('click', function() {
+            modal.classList.remove('hidden');
+            suggestionInput.focus();
+        });
+
+        // 关闭对话框
+        function closeModal() {
+            modal.classList.add('hidden');
+            suggestionInput.value = '';
+        }
+
+        document.getElementById('close-modal').addEventListener('click', closeModal);
+        document.getElementById('cancel-suggestion').addEventListener('click', closeModal);
+
+        // 点击遮罩关闭
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeModal();
+        });
+
+        // 快速建议点击
+        document.querySelectorAll('.suggestion-example').forEach(btn => {
+            btn.addEventListener('click', function() {
+                suggestionInput.value = this.dataset;
+            });
+        });
+
+        // 提交修改建议
+        document.getElementById('submit-suggestion').addEventListener('click', async function() {
+            const suggestion = suggestionInput.value.trim();
+            if (!suggestion) {
+                alert('请输入修改意见');
+                return;
+            }
+
+            const originalCode = document.getElementById('code-editor').value;
+            if (!originalCode || originalCode.includes('请先生成因子代码')) {
+                alert('没有可修改的代码');
+                return;
+            }
+
+            closeModal();
+
+            // 显示代码对话
+            const codeChat = document.getElementById('code-chat');
+            codeChat.classList.remove('hidden');
+
+            // 添加用户消息
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'code-chat-msg';
+            msgDiv.innerHTML = `
+                <div class="code-chat-role user">你</div>
+                <div class="code-chat-content">${suggestion}</div>
+            `;
+            codeChat.appendChild(msgDiv);
+
+            // 显示 AI 响应
+            const aiDiv = document.createElement('div');
+            aiDiv.className = 'code-chat-msg';
+            aiDiv.innerHTML = `
+                <div class="code-chat-role ai">AI</div>
+                <div class="code-chat-content">
+                    <div class="loading" style="padding: 8px 0;">
+                        <div class="spinner"></div>
+                        <span>正在根据你的建议修改代码...</span>
+                    </div>
+                </div>
+            `;
+            codeChat.appendChild(aiDiv);
+            codeChat.scrollTop = codeChat.scrollHeight;
+
+            try {
+                // 调用后端 API 修改代码
+                const response = await fetch(API_BASE + '/api/factor/modify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        original_code: originalCode,
+                        suggestion: suggestion,
+                        class_name: currentClassName || 'Factor'
+                    })
+                });
+                const data = await response.json();
+
+                if (data.success && data.code) {
+                    // 更新代码编辑器
+                    codeEditor.value = data.code;
+                    currentFactorCode = data.code;
+                    codeModified = true;
+                    codeValidated = false;
+                    document.getElementById('run-result')?.classList.add('hidden');
+                    updateCodeStatus();
+                    document.getElementById('btn-save-code').style.display = 'inline-block';
+
+                    // 更新 AI 消息
+                    aiDiv.innerHTML = `
+                        <div class="code-chat-role ai">AI</div>
+                        <div class="code-chat-content" style="background: #f6ffed; border-color: #b7eb8f; color: #52c41a;">
+                            ✅ 已根据你的建议修改代码！请点击"验证代码"确认无误后继续。
+                        </div>
+                    `;
+                } else {
+                    aiDiv.innerHTML = `
+                        <div class="code-chat-role ai">AI</div>
+                        <div class="code-chat-content" style="background: #fff2f0; border-color: #ffccc7; color: #ff4d4f;">
+                            ❌ 修改失败: ${data.error || '未知错误'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('修改代码失败:', error);
+                aiDiv.innerHTML = `
+                    <div class="code-chat-role ai">AI</div>
+                    <div class="code-chat-content" style="background: #fff2f0; border-color: #ffccc7; color: #ff4d4f;">
+                        ❌ 修改失败: ${error.message}
+                    </div>
+                `;
+            }
+
+            codeChat.scrollTop = codeChat.scrollHeight;
+        });
+
+        // ==================== 步骤切换 ====================
+        function goToStep(step) {
+            currentStep = step;
+
+            // 如果跳转到数据准备步骤
+            if (step === 1) {
+                document.getElementById('code-generating-status')?.classList.add('hidden');
+                document.getElementById('back-to-0').disabled = false;
+                document.getElementById('to-step-2').disabled = false;
+            }
+
+            // 如果离开代码生成步骤
+            if (currentStep === 2 && step !== 2) {
+                generationCancelled = true;
+                codeGenerating = false;
+                document.getElementById('code-loading')?.classList.add('hidden');
+                // 自动更新 currentFactorCode，保存当前编辑器内容
+                currentFactorCode = codeEditor.value;
+            }
+
+            // 如果跳转到代码生成步骤
+            if (step === 2) {
+                if (codeGenerating) {
+                    document.getElementById('code-loading').classList.remove('hidden');
+                } else {
+                    document.getElementById('code-loading').classList.add('hidden');
+                    // 无数据时显示警告
+                    const noDataHint = document.getElementById('no-data-hint');
+                    const genBtn = document.getElementById('btn-gen-code');
+                    if (tableData) {
+                        noDataHint?.classList.add('hidden');
+                    } else {
+                        noDataHint?.classList.remove('hidden');
+                    }
+                    // 始终显示生成按钮
+                    if (genBtn) genBtn.classList.remove('hidden');
+                    // 恢复编辑器内容
+                    const codeToShow = currentFactorCode || '';
+                    codeEditor.value = codeToShow;
+                    originalCode = codeToShow;
+                    codeModified = false;
+                    codeValidated = codeToShow.length > 0;
+                    document.getElementById('btn-save-code').style.display = 'none';
+                    if (codeToShow) {
+                        document.querySelector('.code-status').innerHTML = `
+                            <span class="status-dot success"></span>
+                            <span>已保存</span>
+                        `;
+                    } else {
+                        document.querySelector('.code-status').innerHTML = `
+                            <span class="status-dot warning"></span>
+                            <span>待生成</span>
+                        `;
+                    }
+                }
+            }
+
+            document.querySelectorAll('.step-item').forEach((item, i) => {
+                item.classList.remove('active', 'finish');
+                if (i < step) item.classList.add('finish');
+                if (i === step) item.classList.add('active');
+            });
+
+            document.querySelectorAll('.step-content').forEach((content, i) => {
+                content.classList.toggle('hidden', i !== step);
+            });
+
+            // 进入回测步骤时，填充价格列下拉选项（显示所有列）
+            if (step === 3) {
+                const select = document.getElementById('price-col-select');
+                if (select && chartMeta.columns && chartMeta.columns.length > 0) {
+                    const currentVal = select.value;
+                    select.innerHTML = '<option value="auto">自动检测</option>';
+                    // 常用列优先
+                    const priorityCols = ['close', 'price', 'settle', 'settlement', 'close_px', 'bond_mid_adj', 'bond_mid'];
+                    priorityCols.forEach(col => {
+                        if (chartMeta.columns.includes(col)) {
+                            const opt = document.createElement('option');
+                            opt.value = col;
+                            opt.textContent = col;
+                            select.appendChild(opt);
+                        }
+                    });
+                    chartMeta.columns.forEach(col => {
+                        if (select.querySelector(`option[value="${col}"]`)) return;
+                        const opt = document.createElement('option');
+                        opt.value = col;
+                        opt.textContent = col;
+                        select.appendChild(opt);
+                    });
+                    // 恢复之前的选择
+                    if (currentVal !== 'auto' && [...select.options].some(o => o.value === currentVal)) {
+                        select.value = currentVal;
+                    } else if (select.querySelector('option[value="close"]')) {
+                        select.value = 'close';
+                    }
+                }
+
+                // 填充时间列下拉（列出所有列，time_col 必填）
+                const timeSelect = document.getElementById('time-col-select');
+                if (timeSelect && chartMeta.columns && chartMeta.columns.length > 0) {
+                    const timeCurrent = timeSelect.value;
+                    timeSelect.innerHTML = '';
+                    // 常用时间列优先排在前面
+                    const priorityTimeCols = ['date', 'exch_time', 'datetime', 'time', 'trade_date', 'trading_date', 'timestamp'];
+                    priorityTimeCols.forEach(col => {
+                        if (chartMeta.columns.includes(col) && ![...timeSelect.options].some(o => o.value === col)) {
+                            const opt = document.createElement('option');
+                            opt.value = col;
+                            opt.textContent = col;
+                            timeSelect.appendChild(opt);
+                        }
+                    });
+                    chartMeta.columns.forEach(col => {
+                        if ([...timeSelect.options].some(o => o.value === col)) return;
+                        const opt = document.createElement('option');
+                        opt.value = col;
+                        opt.textContent = col;
+                        timeSelect.appendChild(opt);
+                    });
+                    if (timeCurrent && [...timeSelect.options].some(o => o.value === timeCurrent)) {
+                        timeSelect.value = timeCurrent;
+                    } else {
+                        const autoSelect = priorityTimeCols.find(c => chartMeta.columns.includes(c));
+                        if (autoSelect) timeSelect.value = autoSelect;
+                    }
+                }
+            }
+        }
+
+        // 点击步骤条快速跳转（无限制）
+        document.querySelectorAll('.step-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const targetStep = parseInt(this.dataset.step);
+                goToStep(targetStep);
+            });
+        });
+
+        // 导航
+        document.getElementById('back-to-0').addEventListener('click', () => goToStep(0));
+        document.getElementById('to-step-2').addEventListener('click', function() {
+            const selected = hypothesisCandidates.find(h => h.id === selectedHypothesis);
+            if (!selected) {
+                alert('请先选择一个假设');
+                return;
+            }
+
+            // 统一跳转，不自动触发代码生成
+            goToStep(2);
+            if (!tableData) {
+                document.querySelector('.code-status').innerHTML = `
+                    <span class="status-dot warning"></span>
+                    <span>未检测到数据</span>
+                `;
+                document.getElementById('code-editor').value = '';
+                document.getElementById('code-loading').classList.add('hidden');
+                document.getElementById('no-data-hint').classList.remove('hidden');
+                document.getElementById('btn-gen-code').classList.remove('hidden');
+            }
+        });
+
+        // 手动触发生成按钮
+        document.getElementById('btn-gen-code').addEventListener('click', () => {
+            const selected = hypothesisCandidates.find(h => h.id === selectedHypothesis);
+            if (!selected) {
+                alert('请先选择一个假设');
+                return;
+            }
+            triggerCodeGen(selected);
+        });
+
+        // 清空并显示日志面板
+        function showLogPanel() {
+            const panel = document.getElementById('code-log-panel');
+            const content = document.getElementById('code-log-content');
+            content.textContent = '';
+            panel.classList.remove('hidden');
+        }
+
+        function appendLog(msg) {
+            const content = document.getElementById('code-log-content');
+            const now = new Date();
+            const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+            content.textContent += `[${ts}] ${msg}\n`;
+            content.scrollTop = content.scrollHeight;
+        }
+
+        // 清空日志按钮
+        document.getElementById('btn-clear-log').addEventListener('click', () => {
+            document.getElementById('code-log-content').textContent = '';
+            document.getElementById('code-log-panel').classList.add('hidden');
+        });
+
+        // 清空并追加优化日志（始终显示，不隐藏面板）
+        window.appendOptimizeLog = function(msg) {
+            const content = document.getElementById('optimize-log-content');
+            const now = new Date();
+            const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+            content.textContent += `[${ts}] ${msg}\n`;
+            content.scrollTop = content.scrollHeight;
+        };
+
+        // 清空优化日志按钮
+        document.getElementById('btn-clear-optimize-log').addEventListener('click', () => {
+            document.getElementById('optimize-log-content').textContent = '';
+        });
+
+        // 触发代码生成（可被手动调用）
+        async function triggerCodeGen(selected) {
+            if (!selected) selected = hypothesisCandidates.find(h => h.id === selectedHypothesis);
+            if (!selected) return;
+
+            document.getElementById('no-data-hint')?.classList.add('hidden');
+            showLogPanel();
+            appendLog('开始生成代码...');
+
+            generationCancelled = false;
+            codeGenerating = true;
+            document.getElementById('code-loading').classList.remove('hidden');
+            const statusEl = document.querySelector('.code-status');
+            if (statusEl) {
+                statusEl.innerHTML = `<span class="status-dot warning"></span><span>生成中...</span>`;
+            }
+
+            try {
+                const columns = tableData ? tableData.columns : [];
+                const sample_data = {};
+                if (tableData && tableData.data) {
+                    columns.forEach(col => {
+                        sample_data[col] = (tableData.data[col] || []).slice(0, 100);
+                    });
+                }
+
+                const response = await fetch(API_BASE + '/api/factor/build', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        hypothesis: selected,
+                        columns: columns,
+                        sample_data: sample_data
+                    })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    for (const line of lines) {
+                        if (!line.startsWith('data:')) continue;
+                        const raw = line.slice(5).trim();
+                        if (!raw) continue;
+                        try {
+                            const d = JSON.parse(raw);
+                            if (d.type === 'log') {
+                                appendLog(d.msg);
+                            } else if (d.type === 'done') {
+                                if (!generationCancelled) {
+                                    document.getElementById('code-loading').classList.add('hidden');
+                                }
+                                if (d.success) {
+                                    currentFactorCode = d.code;
+                                    currentFactorName = selected.name;
+                                    currentClassName = d.class_name;
+                                    if (!generationCancelled) {
+                                        const codeEditor = document.getElementById('code-editor');
+                                        codeEditor.value = d.code;
+                                        codeEditor.dataset.original = d.code;
+                                        originalCode = d.code;
+                                        codeModified = false;
+                                        codeValidated = false;
+                                        document.getElementById('btn-save-code').style.display = 'none';
+                                        const fnEl = document.querySelector('.code-filename span:last-child');
+                                        if (fnEl) fnEl.textContent = d.class_name + '.py';
+                                        if (statusEl) {
+                                            statusEl.innerHTML = `<span class="status-dot warning"></span><span>已生成（待验证）</span>`;
+                                        }
+                                    }
+                                    appendLog('代码已填入编辑器，可点击「验证代码」进行测试');
+                                } else {
+                                    appendLog('❌ 生成失败: ' + d.msg);
+                                    if (!generationCancelled && statusEl) {
+                                        statusEl.innerHTML = `<span class="status-dot error"></span><span>生成失败</span>`;
+                                    }
+                                }
+                            } else if (d.type === 'error') {
+                                if (!generationCancelled) {
+                                    document.getElementById('code-loading').classList.add('hidden');
+                                }
+                                appendLog('❌ ' + d.msg);
+                                if (!generationCancelled && statusEl) {
+                                    statusEl.innerHTML = `<span class="status-dot error"></span><span>生成失败</span>`;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('SSE解析失败:', raw, e);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('API调用失败:', error);
+                if (!generationCancelled) {
+                    document.getElementById('code-loading').classList.add('hidden');
+                    appendLog('❌ 网络错误: ' + error.message);
+                    if (statusEl) {
+                        statusEl.innerHTML = `<span class="status-dot error"></span><span>生成失败</span>`;
+                    }
+                } else {
+                    appendLog('❌ 网络错误（已离开生成页面）: ' + error.message);
+                }
+            } finally {
+                codeGenerating = false;
+            }
+        }
+        document.getElementById('back-to-1').addEventListener('click', () => goToStep(1));
+        document.getElementById('to-step-3').addEventListener('click', () => goToStep(3));
+        document.getElementById('back-to-2').addEventListener('click', () => goToStep(2));
+
+        // 样本数据加载
+        document.getElementById('load-sample').addEventListener('click', async function() {
+            this.textContent = '加载中...';
+            this.disabled = true;
+
+            try {
+                const response = await fetch(API_BASE + '/api/data/sample');
+                const data = await response.json();
+
+                if (data.success) {
+                    // 显示数据概览（表格和指标由 initDataChart 填充，支持全量分页）
+                    document.getElementById('data-overview').classList.remove('hidden');
+                    fullChartData = null;  // 清除图表缓存
+                    await initDataChart(data.columns, data.numeric_columns || []);
+                }
+            } catch (error) {
+                console.error('加载数据失败:', error);
+            }
+
+            this.textContent = '加载样本数据';
+            this.disabled = false;
+        });
+
+        // ==================== 数据源切换 ====================
+        document.querySelectorAll('.toggle-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.toggle-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                document.querySelectorAll('.data-tab').forEach(t => t.classList.add('hidden'));
+                document.getElementById('tab-' + this.dataset.tab).classList.remove('hidden');
+            });
+        });
+
+        // ==================== 代码获取数据 ====================
+        document.getElementById('run-data-code').addEventListener('click', async function() {
+            this.textContent = '运行中...';
+            this.disabled = true;
+
+            // 显示加载状态
+            const status = document.getElementById('data-code-status');
+            status.innerHTML = '<span class="status-dot" style="background:#faad14;animation:spin 1s linear infinite;"></span><span>正在运行...</span>';
+
+            try {
+                const code = document.getElementById('data-code-editor').value;
+                const response = await fetch(API_BASE + '/api/data/code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+                const data = await response.json();
+
+                this.textContent = '▶️ 运行代码';
+                this.disabled = false;
+
+                if (data.success) {
+                    status.innerHTML = '<span class="status-dot success"></span><span>运行成功</span>';
+
+                    // 显示数据概览（表格和指标由 initDataChart 填充，支持全量分页）
+                    document.getElementById('data-overview').classList.remove('hidden');
+                    await initDataChart(data.columns, data.numeric_columns || []);
+
+                    // 显示成功提示
+                    const dataConfig = document.getElementById('data-config');
+                    const existingAlert = dataConfig.querySelector('.alert');
+                    if (existingAlert) existingAlert.remove();
+
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success';
+                    alertDiv.innerHTML = '<span>✅</span><div><strong>数据加载成功</strong><p style="margin:4px 0 0 0;font-size:13px;">通过代码成功获取 ' + data.count.toLocaleString() + ' 条数据</p></div>';
+                    dataConfig.insertBefore(alertDiv, dataConfig.firstChild);
+                } else {
+                    status.innerHTML = '<span class="status-dot error"></span><span>运行失败</span>';
+                    alert('运行失败: ' + data.error);
+                }
+                this.textContent = '▶️ 运行代码';
+                this.disabled = false;
+            } catch (error) {
+                console.error('运行代码失败:', error);
+                this.textContent = '▶️ 运行代码';
+                this.disabled = false;
+                status.innerHTML = '<span class="status-dot error"></span><span>运行失败</span>';
+                alert('运行失败，请检查代码是否正确');
+            }
+        });
+
+        // ==================== LLM 数据代码生成 ====================
+        const llmDataModal = document.getElementById('llm-data-modal');
+        const llmDataInput = document.getElementById('llm-data-input');
+        const dataCodeChat = document.getElementById('data-code-chat');
+
+        // 打开 LLM 对话框
+        document.getElementById('btn-ask-llm').addEventListener('click', () => {
+            llmDataModal.classList.remove('hidden');
+            llmDataInput.focus();
+        });
+
+        // 关闭对话框
+        function closeLlmDataModal() {
+            llmDataModal.classList.add('hidden');
+        }
+        document.getElementById('close-llm-modal').addEventListener('click', closeLlmDataModal);
+        document.getElementById('cancel-llm-data').addEventListener('click', closeLlmDataModal);
+        llmDataModal.addEventListener('click', e => {
+            if (e.target === llmDataModal) closeLlmDataModal();
+        });
+
+        // 生成代码
+        function generateDataCode(text) {
+            let codeTemplate = '';
+            const lowerText = text.toLowerCase();
+
+            if (lowerText.includes('mysql')) {
+                codeTemplate = `import pandas as pd
+import pymysql
+
+# 数据库连接配置
+DB_CONFIG = {
+    'host': 'localhost',
+    'port': 3306,
+    'user': 'root',
+    'password': 'your_password',
+    'database': 'futures_data'
+}
+
+def load_data() -> pd.DataFrame:
+    conn = pymysql.connect(**DB_CONFIG)
+    query = """SELECT trade_date as date, open, high, low, close, volume,
+               pct_change as \`return\` FROM futures_daily
+               WHERE symbol = 'T.CHT'
+               AND trade_date BETWEEN '2020-01-01' AND '2024-12-31'
+               ORDER BY trade_date"""
+    df = pd.read_sql(query, conn)
+    conn.close()
+    return df`;
+            } else if (lowerText.includes('postgresql')) {
+                codeTemplate = `import pandas as pd
+import psycopg2
+
+# 数据库连接配置
+DB_CONFIG = {
+    'host': 'localhost',
+    'port': 5432,
+    'user': 'postgres',
+    'password': 'your_password',
+    'database': 'futures'
+}
+
+def load_data() -> pd.DataFrame:
+    conn = psycopg2.connect(**DB_CONFIG)
+    query = """SELECT trade_date as date, open, high, low, close, volume,
+               pct_change as return FROM futures_daily
+               WHERE symbol = 'T.CHT'
+               AND trade_date BETWEEN '2020-01-01' AND '2024-12-31'
+               ORDER BY trade_date"""
+    df = pd.read_sql(query, conn)
+    conn.close()
+    return df`;
+            } else if (lowerText.includes('sqlite')) {
+                codeTemplate = `import pandas as pd
+import sqlite3
+
+def load_data() -> pd.DataFrame:
+    conn = sqlite3.connect('futures.db')
+    query = """SELECT trade_date as date, open, high, low, close, volume,
+               pct_change as return FROM futures_daily
+               WHERE symbol = 'T.CHT'
+               AND trade_date BETWEEN '2020-01-01' AND '2024-12-31'
+               ORDER BY trade_date"""
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    return df`;
+            } else if (lowerText.includes('api')) {
+                codeTemplate = `import pandas as pd
+import requests
+
+def load_data() -> pd.DataFrame:
+    url = 'https://api.example.com/v1/futures'
+    params = {
+        'symbol': 'T.CHT',
+        'from': '2020-01-01',
+        'to': '2024-12-31',
+        'interval': '1d'
+    }
+    headers = {'Authorization': 'Bearer YOUR_API_KEY'}
+
+    resp = requests.get(url, params=params, headers=headers)
+    data = resp.json()
+
+    # 转换为 DataFrame
+    df = pd.DataFrame(data['data'])
+    df.columns = ['date', 'open', 'high', 'low', 'close', 'volume']
+    df['return'] = df['close'].pct_change()
+    return df`;
+            } else if (lowerText.includes('csv')) {
+                codeTemplate = `import pandas as pd
+
+def load_data() -> pd.DataFrame:
+    # 从 CSV 文件读取数据
+    filepath = 'path/to/your/data.csv'
+
+    df = pd.read_csv(filepath, parse_dates=['date'])
+    df = df.sort_values('date').reset_index(drop=True)
+
+    # 确保必要的列存在
+    required_cols = ['date', 'open', 'high', 'low', 'close', 'volume']
+    if 'return' not in df.columns:
+        df['return'] = df['close'].pct_change()
+
+    return df`;
+            } else if (lowerText.includes('excel')) {
+                codeTemplate = `import pandas as pd
+
+def load_data() -> pd.DataFrame:
+    # 从 Excel 文件读取数据
+    filepath = 'path/to/your/data.xlsx'
+    sheet_name = 'Sheet1'  # 或使用索引 0
+
+    df = pd.read_excel(filepath, sheet_name=sheet_name, parse_dates=['date'])
+    df = df.sort_values('date').reset_index(drop=True)
+
+    # 确保必要的列存在
+    required_cols = ['date', 'open', 'high', 'low', 'close', 'volume']
+    if 'return' not in df.columns:
+        df['return'] = df['close'].pct_change()
+
+    return df`;
+            } else {
+                codeTemplate = `import pandas as pd
+import numpy as np
+
+def load_data() -> pd.DataFrame:
+    """
+    从数据库加载数据
+    返回包含以下列的 DataFrame:
+    - date: 日期
+    - open/high/low/close: OHLC价格
+    - volume: 成交量
+    - return: 收益率
+    """
+    # TODO: 根据你的数据源修改连接方式
+    # 支持: MySQL, PostgreSQL, SQLite, API, CSV, Excel 等
+
+    # 示例：使用模拟数据
+    dates = pd.date_range('2020-01-01', '2024-12-31', freq='B')
+    np.random.seed(42)
+
+    df = pd.DataFrame({
+        'date': dates,
+        'open': 100 + np.random.randn(len(dates)).cumsum(),
+        'high': 102 + np.random.randn(len(dates)).cumsum(),
+        'low': 98 + np.random.randn(len(dates)).cumsum(),
+        'close': 100 + np.random.randn(len(dates)).cumsum(),
+        'volume': np.random.randint(10000, 100000, len(dates)),
+        'return': np.random.randn(len(dates)) * 0.01
+    })
+
+    return df`;
+            }
+
+            return codeTemplate;
+        }
+
+        // 提交生成请求（显示在选项卡下方）
+        function submitLlmDataRequest() {
+            const text = llmDataInput.value.trim();
+            if (!text) {
+                alert('请描述你的数据来源需求');
+                return;
+            }
+
+            // 关闭对话框
+            closeLlmDataModal();
+
+            // 显示对话区
+            dataCodeChat.classList.remove('hidden');
+
+            // 显示用户消息
+            const userMsg = document.createElement('div');
+            userMsg.className = 'code-chat-msg';
+            userMsg.innerHTML = `<div class="code-chat-role user">你</div><div class="code-chat-content">${text}</div>`;
+            dataCodeChat.appendChild(userMsg);
+            dataCodeChat.scrollTop = dataCodeChat.scrollHeight;
+
+            // 清空输入
+            llmDataInput.value = '';
+
+            // 显示加载状态
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'code-chat-msg';
+            loadingDiv.id = 'llm-loading-msg';
+            loadingDiv.innerHTML = `<div class="code-chat-role ai">AI</div><div class="code-chat-content"><div class="loading" style="padding: 8px 0;"><div class="spinner"></div><span>正在生成代码...</span></div></div>`;
+            dataCodeChat.appendChild(loadingDiv);
+            dataCodeChat.scrollTop = dataCodeChat.scrollHeight;
+
+            setTimeout(() => {
+                // 移除加载消息
+                document.getElementById('llm-loading-msg').remove();
+
+                // 生成代码
+                const code = generateDataCode(text);
+
+                // 显示 AI 响应
+                const aiMsg = document.createElement('div');
+                aiMsg.className = 'code-chat-msg';
+                aiMsg.innerHTML = `<div class="code-chat-role ai">AI</div><div class="code-chat-content">根据你的需求，生成代码如下：<pre style="background:#1e1e1e;color:#d4d4d4;padding:8px;border-radius:4px;margin-top:8px;font-size:11px;overflow-x:auto;white-space:pre;">${code}</pre><button class="btn btn-sm btn-primary" style="margin-top:8px;" id="apply-data-code-btn">应用到代码编辑器</button></div>`;
+                dataCodeChat.appendChild(aiMsg);
+                dataCodeChat.scrollTop = dataCodeChat.scrollHeight;
+
+                // 绑定应用代码按钮
+                document.getElementById('apply-data-code-btn').addEventListener('click', function() {
+                    document.getElementById('data-code-editor').value = code;
+
+                    // 显示成功提示
+                    const dataConfig = document.getElementById('data-config');
+                    const existingAlert = dataConfig.querySelector('.alert');
+                    if (existingAlert) existingAlert.remove();
+
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success';
+                    alertDiv.innerHTML = `<span>✅</span><div><strong>代码已生成</strong><p style="margin:4px 0 0 0;font-size:13px;">AI 已生成数据获取代码，请点击「运行代码」执行</p></div>`;
+                    dataConfig.insertBefore(alertDiv, dataConfig.firstChild);
+                });
+            }, 800);
+        }
+
+        // 绑定发送按钮
+        document.getElementById('submit-llm-data').addEventListener('click', submitLlmDataRequest);
+
+        // 回车发送
+        llmDataInput.addEventListener('keypress', e => {
+            if (e.key === 'Enter') submitLlmDataRequest();
+        });
+
+        // 快速提示点击
+        document.querySelectorAll('.quick-data-prompt').forEach(btn => {
+            btn.addEventListener('click', function() {
+                llmDataInput.value = this.dataset.dsrc;
+                submitLlmDataRequest();
+            });
+        });
+
+        // ==================== 文件上传功能 ====================
+        const selectFileBtn = document.getElementById('select-file-btn');
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+
+        if (selectFileBtn && fileInput) {
+            // 点击选择文件按钮
+            selectFileBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+
+            // 文件选择后上传
+            fileInput.addEventListener('change', async function() {
+                if (this.files.length > 0) {
+                    const file = this.files[0];
+                    await uploadFile(file);
+                }
+            });
+
+            // 拖拽上传
+            if (dropZone) {
+                dropZone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.style.borderColor = '#1890ff';
+                    this.style.background = '#e6f7ff';
+                });
+
+                dropZone.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    this.style.borderColor = '#d9d9d9';
+                    this.style.background = '#fafafa';
+                });
+
+                dropZone.addEventListener('drop', async function(e) {
+                    e.preventDefault();
+                    this.style.borderColor = '#d9d9d9';
+                    this.style.background = '#fafafa';
+
+                    if (e.dataTransfer.files.length > 0) {
+                        const file = e.dataTransfer.files[0];
+                        await uploadFile(file);
+                    }
+                });
+            }
+
+            // 上传文件函数
+            async function uploadFile(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // 添加是否读取index的参数
+                const readIndex = document.getElementById('read-index-checkbox').checked;
+                formData.append('read_index', readIndex.toString());
+
+                // 显示文件大小
+                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                selectFileBtn.textContent = `上传中 (${fileSizeMB}MB)...`;
+                selectFileBtn.disabled = true;
+
+                try {
+                    // 使用 AbortController 添加超时
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10 * 60 * 1000); // 10分钟超时
+
+                    const response = await fetch('/api/data/upload', {
+                        method: 'POST',
+                        body: formData,
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        alert('上传失败: ' + (data.error || `HTTP ${response.status}`));
+                    } else if (data.success) {
+                        // 显示数据概览（上传响应已带第一页数据，无需额外请求）
+                        document.getElementById('data-overview').classList.remove('hidden');
+                        fullChartData = null;  // 清除图表缓存
+                        await initDataChart(data.columns, data.numeric_columns || [], data);
+
+                        // 显示成功提示
+                        const dataConfig = document.getElementById('data-config');
+                        const existingAlert = dataConfig.querySelector('.alert');
+                        if (existingAlert) existingAlert.remove();
+
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-success';
+                        alertDiv.innerHTML = `<span>✅</span><div><strong>文件上传成功</strong><p style="margin:4px 0 0 0;font-size:13px;">成功加载 ${data.row_count?.toLocaleString()} 条数据</p></div>`;
+                        dataConfig.insertBefore(alertDiv, dataConfig.firstChild);
+                    } else {
+                        alert('上传失败: ' + data.error);
+                    }
+                } catch (error) {
+                    console.error('上传失败:', error);
+                    if (error.name === 'AbortError') {
+                        alert('上传超时，文件太大或网络太慢，请尝试使用代码方式加载数据');
+                    } else if (error.response && error.response.status === 413) {
+                        alert('文件大小超过500MB限制，请拆分文件或使用代码方式加载数据');
+                    } else {
+                        alert('上传失败，请重试: ' + error.message);
+                    }
+                }
+
+                selectFileBtn.textContent = '选择文件';
+                selectFileBtn.disabled = false;
+                // 重置 file input，允许再次上传同一文件
+                fileInput.value = '';
+            }
+        }
+
+        // 回测
+        document.getElementById('run-backtest').addEventListener('click', async function() {
+            this.disabled = true;
+            this.textContent = '回测中...';
+
+            try {
+                // 从代码编辑器获取代码
+                const codeEditor = document.getElementById('code-editor');
+                const factorCode = codeEditor.value;
+
+                if (!factorCode || !currentClassName) {
+                    alert('请先生成因子代码');
+                    this.disabled = false;
+                    this.textContent = '🚀 开始回测';
+                    return;
+                }
+
+                const response = await fetch(API_BASE + '/api/backtest/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        factor_code: factorCode,
+                        class_name: currentClassName,
+                        factor_name: currentFactorName || 'Unknown',
+                        params: currentParams,
+                        horizon: parseInt(document.getElementById('horizon-input')?.value || '5'),
+                        window: parseInt(document.getElementById('window-input')?.value || '60'),
+                        price_col: document.getElementById('price-col-select')?.value || 'auto',
+                        time_col: document.getElementById('time-col-select')?.value || 'auto'
+                    })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    // 保存回测结果，供步骤5诊断使用
+                    window.lastBacktestResult = data;
+                    // 更新回测结果显示
+                    updateBacktestResult(data);
+                    document.getElementById('backtest-result').classList.remove('hidden');
+                    drawICChart(data);
+                } else {
+                    alert('回测失败: ' + data.error);
+                }
+            } catch (error) {
+                console.error('回测API调用失败:', error);
+                document.getElementById('backtest-result').classList.remove('hidden');
+            }
+
+            this.disabled = false;
+            this.textContent = '🚀 开始回测';
+        });
+
+        // 更新回测结果（与 plot_results() 指标一致）
+        function updateBacktestResult(data) {
+            // 辅助函数：判断指标是否达标
+            const icOk = data.ic_mean > 0.02;
+            const irOk = data.ir > 0.3;
+            const icRateOk = data.ic_positive_ratio > 0.52;
+            const sharpeOk = data.sharpe_ratio > 0.5;
+            const ddOk = data.max_drawdown > -0.2;
+            const winOk = data.win_rate > 0.5;
+            const annOk = data.annual_return > 0;
+
+            function metricCard(label, value, fmt, isGood) {
+                const cls = isGood === true ? 'success' : (isGood === false ? 'warning' : '');
+                const v = isNaN(value) || value === null ? '—' : fmt;
+                return `<div class="metric-card ${cls}"><div class="metric-value">${v}</div><div class="metric-label">${label}</div></div>`;
+            }
+
+            const container = document.querySelector('#backtest-result .metric-grid');
+            container.innerHTML = `
+                ${metricCard('IC均值', data.ic_mean, data.ic_mean.toFixed(4), icOk)}
+                ${metricCard('IC标准差', data.ic_std, data.ic_std.toFixed(4), null)}
+                ${metricCard('IR', data.ir, data.ir.toFixed(3), irOk)}
+                ${metricCard('IC胜率', data.ic_positive_ratio, (data.ic_positive_ratio * 100).toFixed(1) + '%', icRateOk)}
+                ${metricCard('资本利得', data.capital_gain, data.capital_gain.toFixed(4), data.capital_gain > 0)}
+                ${metricCard('年化收益', data.annual_return, data.annual_return.toFixed(4), annOk)}
+                ${metricCard('胜率', data.win_rate, (data.win_rate * 100).toFixed(1) + '%', winOk)}
+                ${metricCard('盈亏比', data.profit_loss_ratio, data.profit_loss_ratio.toFixed(2), data.profit_loss_ratio > 1)}
+                ${metricCard('夏普比率', data.sharpe_ratio, data.sharpe_ratio.toFixed(3), sharpeOk)}
+                ${metricCard('最大回撤', data.max_drawdown, data.max_drawdown.toFixed(4), ddOk)}
+                ${metricCard('换手率', data.turnover, (data.turnover * 100).toFixed(1) + '%', null)}
+            `;
+
+            // 更新通过/失败提示
+            const alertDiv = document.getElementById('backtest-result').querySelector('.alert');
+            if (data.pass_test) {
+                alertDiv.className = 'alert alert-success';
+                alertDiv.innerHTML = `
+                    <span>✅</span>
+                    <div>
+                        <strong>通过检验</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 13px;">因子各项指标达到预期标准</p>
+                    </div>
+                `;
+            } else {
+                // 列出达标项和未达标项
+                const passed = [], failed = [];
+                if (Math.abs(data.ic_mean) > 0.02) passed.push(`IC均值 ${data.ic_mean.toFixed(4)}`);
+                else failed.push(`IC均值 ${data.ic_mean.toFixed(4)} (需 > 0.02)`);
+                if (data.ir > 0.3) passed.push(`IR ${data.ir.toFixed(3)}`);
+                else failed.push(`IR ${data.ir.toFixed(3)} (需 > 0.3)`);
+                if (data.ic_positive_ratio > 0.55) passed.push(`IC胜率 ${(data.ic_positive_ratio*100).toFixed(1)}%`);
+                else failed.push(`IC胜率 ${(data.ic_positive_ratio*100).toFixed(1)}% (需 > 55%)`);
+                if (data.sharpe_ratio > 0.5) passed.push(`夏普 ${data.sharpe_ratio.toFixed(3)}`);
+                else failed.push(`夏普 ${data.sharpe_ratio.toFixed(3)} (需 > 0.5)`);
+                if (data.max_drawdown > -0.2) passed.push(`最大回撤 ${(data.max_drawdown*100).toFixed(1)}%`);
+                else failed.push(`最大回撤 ${(data.max_drawdown*100).toFixed(1)}% (需 > -20%)`);
+
+                alertDiv.className = 'alert alert-error';
+                alertDiv.innerHTML = `
+                    <span>❌</span>
+                    <div>
+                        <strong>未通过检验</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 13px;">
+                            ${failed.length > 0 ? `<span style="color:#ff4d4f;">未达标: ${failed.join(' | ')}</span><br>` : ''}
+                            ${passed.length > 0 ? `<span style="color:#52c41a;">已达标: ${passed.join(' | ')}</span>` : ''}
+                        </p>
+                    </div>
+                `;
+            }
+
+            // 渲染数据概览表格（按日期合并四列）
+            _lastBktData = data;
+            renderBktTable(data);
+        }
+
+        // ---- 回测数据概览表格 ----
+        let _lastBktData = null;  // 缓存最近一次回测数据
+        function renderBktTable(data) {
+            const thead = document.getElementById('bkt-table-head');
+            const tbody = document.getElementById('bkt-table-body');
+            if (!thead || !tbody) return;
+
+            // 按日期合并 IC、因子值、价格、累计收益四列
+            const merged = {};
+            (data.ic_series || []).forEach(item => {
+                if (!merged[item.date]) merged[item.date] = {};
+                merged[item.date].date = item.date;
+                merged[item.date].ic = item.value;
+            });
+            (data.factor_series || []).forEach(item => {
+                if (!merged[item.date]) merged[item.date] = {};
+                merged[item.date].date = item.date;
+                merged[item.date].factor = item.value;
+            });
+            (data.price_series || []).forEach(item => {
+                if (!merged[item.date]) merged[item.date] = {};
+                merged[item.date].date = item.date;
+                merged[item.date].price = item.value;
+            });
+            (data.return_series || []).forEach(item => {
+                if (!merged[item.date]) merged[item.date] = {};
+                merged[item.date].date = item.date;
+                merged[item.date].cumret = item.value;
+            });
+
+            const cols = ['date', 'IC', '因子值', '价格', '累计收益'];
+            const rows = Object.values(merged)
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .map(row => [
+                    row.date || '—',
+                    row.ic != null ? row.ic.toFixed(6) : '—',
+                    row.factor != null ? row.factor.toFixed(6) : '—',
+                    row.price != null ? row.price.toFixed(4) : '—',
+                    row.cumret != null ? row.cumret.toFixed(6) : '—'
+                ]);
+
+
+            thead.innerHTML = `<tr>${cols.map(c => `<th style="padding:6px 10px;text-align:center;border-bottom:1px solid #ddd;">${c}</th>`).join('')}</tr>`;
+            tbody.innerHTML = rows.map(r => `<tr>${r.map((v, i) => `<td style="padding:4px 10px;border-bottom:1px solid #f0f0f0;text-align:center;font-family:monospace;">${v}</td>`).join('')}</tr>`).join('');
+        }
+
+        // 下拉切换序列（已移除，合并为一张表）
+
+        // ==================== 数据图表 ====================
+        let dataChart = null;
+        // tableData: 分页表格数据（按页从服务端获取）
+        // fullChartData: 全量数据（仅在渲染图表时一次性加载）
+        let tableData = null;
+        let fullChartData = null;
+        let chartMeta = { columns: [], numeric_columns: [] };  // 列信息缓存
+        const CHART_COLORS = ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2', '#fa8c16', '#eb2f96'];
+
+        // 当前选中的 Y轴字段（药片选择）
+        let selectedYCols = new Set();
+
+        // 分页状态
+        const PAGE_SIZE = 1000;
+        let tableState = { currentPage: 1, totalPages: 1 };
+
+        // 渲染表格（当前页）
+        function renderTablePage() {
+            const { currentPage, totalPages } = tableState;
+            const thead = document.getElementById('preview-header');
+            const tbody = document.getElementById('preview-body');
+            if (!thead || !tbody || !tableData) return;
+
+            const cols = tableData.columns || [];
+            const total = tableData.row_count || 0;
+            const start = (currentPage - 1) * PAGE_SIZE;
+
+            // 生成表头
+            thead.innerHTML = '<tr><th style="position: sticky; top: 0; background: #f5f5f5; z-index: 10;">#</th>' +
+                cols.map(c => `<th style="position: sticky; top: 0; background: #f5f5f5;">${c}</th>`).join('') + '</tr>';
+
+            // 生成当前页数据
+            tbody.innerHTML = Array.from({ length: PAGE_SIZE }, (_, i) => {
+                const idx = start + i;
+                if (idx >= total) return '';
+                let tr = `<tr><td style="background: #f5f5f5; font-weight: 500;">${idx + 1}</td>`;
+                cols.forEach(col => {
+                    const val = tableData.data[col]?.[i];
+                    if (val === null || val === undefined || val === '') {
+                        tr += '<td style="color: #ccc;">—</td>';
+                    } else if (typeof val === 'number') {
+                        tr += `<td>${Number(val).toFixed(4)}</td>`;
+                    } else {
+                        tr += `<td>${val}</td>`;
+                    }
+                });
+                return tr + '</tr>';
+            }).join('');
+
+            // 强制重排，确保列宽自适应
+            const table = thead.parentElement;
+            table.style.tableLayout = 'fixed';
+            table.offsetWidth;
+            table.style.tableLayout = 'auto';
+
+            // 更新分页信息
+            const pageInfo = document.getElementById('page-info');
+            pageInfo.textContent = `共 ${total.toLocaleString()} 条，第 ${currentPage}/${totalPages} 页`;
+
+            // 更新分页按钮
+            document.getElementById('page-prev').disabled = currentPage <= 1;
+            document.getElementById('page-next').disabled = currentPage >= totalPages;
+
+            // 页码按钮
+            const pageNumbers = document.getElementById('page-numbers');
+            const maxBtns = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxBtns / 2));
+            let endPage = Math.min(totalPages, startPage + maxBtns - 1);
+            if (endPage - startPage < maxBtns - 1) startPage = Math.max(1, endPage - maxBtns + 1);
+            pageNumbers.innerHTML = Array.from({ length: endPage - startPage + 1 }, (_, i) => {
+                const p = startPage + i;
+                return `<button class="page-btn${p === currentPage ? ' active' : ''}" data-page="${p}">${p}</button>`;
+            }).join('');
+
+            // 更新跳转框
+            document.getElementById('page-jump-total').textContent = `页 / ${totalPages}`;
+            document.getElementById('page-jump-input').max = totalPages;
+        }
+
+        // 绑定分页按钮事件
+        document.getElementById('page-prev').addEventListener('click', () => {
+            if (tableState.currentPage > 1) {
+                fetchChartPage(tableState.currentPage - 1);
+            }
+        });
+        document.getElementById('page-next').addEventListener('click', () => {
+            if (tableState.currentPage < tableState.totalPages) {
+                fetchChartPage(tableState.currentPage + 1);
+            }
+        });
+        document.getElementById('page-numbers').addEventListener('click', e => {
+            if (e.target.dataset.page) {
+                fetchChartPage(parseInt(e.target.dataset.page));
+            }
+        });
+        document.getElementById('page-jump-btn').addEventListener('click', () => {
+            const input = document.getElementById('page-jump-input');
+            const page = parseInt(input.value);
+            if (page && page >= 1 && page <= tableState.totalPages) {
+                fetchChartPage(page);
+            }
+        });
+        document.getElementById('page-jump-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                document.getElementById('page-jump-btn').click();
+            }
+        });
+
+        // 从服务端获取指定页数据（只取当前表格列）
+        async function fetchChartPage(page) {
+            try {
+                // 只请求表格当前显示的列，大幅减少数据量
+                const cols = (chartMeta.columns || []).join(',');
+                const url = cols
+                    ? `${API_BASE}/api/data/chart?page=${page}&page_size=${PAGE_SIZE}&cols=${cols}`
+                    : `${API_BASE}/api/data/chart?page=${page}&page_size=${PAGE_SIZE}`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+                if (data.success) {
+                    tableData = data;
+                    tableState.currentPage = data.page;
+                    tableState.totalPages = data.total_pages;
+                    renderTablePage();
+                }
+            } catch (e) {
+                console.error('分页加载失败:', e);
+            }
+        }
+
+        // 根据 chart API 数据初始化表格和分页
+        function buildPreviewTable(chartInfo) {
+            const total = chartInfo.row_count || 0;
+            tableData = chartInfo;
+            tableState = { currentPage: chartInfo.page || 1, totalPages: chartInfo.total_pages || Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+            document.getElementById('table-pagination').style.display = 'flex';
+            renderTablePage();
+        }
+
+        // 初始化图表 UI：填 X轴下拉框 + Y轴药片，同时更新预览表格（分页）
+        // page1Data 可选：上传响应已带第一页数据，避免重复请求
+        async function initDataChart(allCols, numericCols, page1Data) {
+            const xSelect = document.getElementById('chart-x-col');
+            const yPills = document.getElementById('chart-y-pills');
+            if (!xSelect || !yPills) return;
+
+            // 如果上传时已返回第一页数据，直接使用；否则从服务端拉取
+            let chartInfo = page1Data || null;
+            if (!chartInfo) {
+                try {
+                    const resp = await fetch(`${API_BASE}/api/data/chart?page=1&page_size=${PAGE_SIZE}`);
+                    chartInfo = await resp.json();
+                } catch {
+                    chartInfo = null;
+                }
+            }
+
+            // 更新预览表格（支持服务端分页）
+            if (chartInfo && chartInfo.success) {
+                chartMeta = {
+                    columns: chartInfo.columns || [],
+                    numeric_columns: chartInfo.numeric_columns || [],
+                    date_columns: (chartInfo.columns || []).filter(c =>
+                        /^(date|time|datetime|exch_time|trade_date|trading_date|dt)$/i.test(c)
+                    )
+                };
+                buildPreviewTable(chartInfo);
+                document.getElementById('data-count').textContent = chartInfo.row_count?.toLocaleString() || '—';
+                document.getElementById('data-cols').textContent = (chartInfo.columns || []).length;
+                allCols = chartInfo.columns || allCols;
+            }
+
+            const defaultX = allCols[0] || '';
+
+            // 填充 X轴下拉
+            xSelect.innerHTML = '<option value="">— 选择字段 —</option>' +
+                allCols.map(c => `<option value="${c}"${c === defaultX ? ' selected' : ''}>${c}</option>`).join('');
+
+            // 填充 Y轴药片（默认不选中，用户手动点选）
+            yPills.innerHTML = allCols.map(c =>
+                `<span class="chart-pill" data-col="${c}">${c}</span>`
+            ).join('');
+
+            // 清空选中状态
+            selectedYCols.clear();
+
+            // 点击药片切换选中
+            yPills.querySelectorAll('.chart-pill').forEach(pill => {
+                pill.addEventListener('click', () => {
+                    const col = pill.dataset.col;
+                    if (selectedYCols.has(col)) {
+                        selectedYCols.delete(col);
+                        pill.classList.remove('selected');
+                    } else {
+                        selectedYCols.add(col);
+                        pill.classList.add('selected');
+                    }
+                });
+            });
+        }
+
+        document.getElementById('chart-render-btn').addEventListener('click', renderDataChart);
+        document.getElementById('chart-reset-zoom-btn').addEventListener('click', () => {
+            if (dataChart) dataChart.dispatchAction({ type: 'dataZoom', start: 0, end: 100 });
+        });
+
+        async function renderDataChart() {
+            const xCol = document.getElementById('chart-x-col').value;
+            const chartType = document.getElementById('chart-type').value;
+            const chartDom = document.getElementById('data-chart');
+
+            // 从 Set 读取选中的 Y轴字段
+            const yCols = [...selectedYCols];
+            if (!xCol || yCols.length === 0) {
+                alert('请选择 X轴 和至少一个 Y轴 字段');
+                return;
+            }
+
+            // 只取 X轴 + Y轴 列，避免拉全部列；同时带上降采样；load_full 触发懒加载全量文件
+            const neededCols = [xCol, ...yCols].join(',');
+            if (!fullChartData || fullChartData._key !== neededCols) {
+                const resp = await fetch(`${API_BASE}/api/data/chart?cols=${neededCols}&downsample=3000&load_full=true`);
+                const data = await resp.json();
+                if (!data.success) { alert('加载图表数据失败'); return; }
+                data._key = neededCols;  // 按列缓存标记
+                fullChartData = data;
+            }
+
+            const chartData = fullChartData;
+            if (dataChart) dataChart.dispose();
+            dataChart = echarts.init(chartDom);
+
+            const xData = chartData.data[xCol] || [];
+            const isScatter = chartType === 'scatter';
+            const numericSet = new Set(chartData.numeric_columns || []);
+            const effectiveYCols = isScatter ? yCols.slice(0, 1) : yCols;
+
+            const series = effectiveYCols.map((yCol, idx) => {
+                const color = CHART_COLORS[idx % CHART_COLORS.length];
+                const isNum = numericSet.has(yCol);
+                const rawVals = chartData.data[yCol] || [];
+
+                if (isScatter) {
+                    // 散点图：X和Y都转数值
+                    const xRaw = chartData.data[xCol] || [];
+                    const data = rawVals.map((y, i) => {
+                        const xv = parseFloat(xRaw[i]);
+                        const yv = isNum ? parseFloat(y) : y;
+                        if (isNaN(xv) || yv === null) return null;
+                        return [xv, yv];
+                    }).filter(p => p !== null);
+                    return {
+                        type: 'scatter',
+                        name: yCol,
+                        data,
+                        symbolSize: 6,
+                        itemStyle: { color, opacity: 0.7 },
+                        yAxisIndex: idx
+                    };
+                } else {
+                    // 折线/柱状：数值列转数字，非数值列保持原值
+                    const data = rawVals.map(v => {
+                        if (v === null || v === undefined) return null;
+                        return isNum ? parseFloat(v) : v;
+                    });
+                    return {
+                        type: chartType,
+                        name: yCol,
+                        data,
+                        smooth: chartType === 'line',
+                        itemStyle: { color },
+                        barMaxWidth: 20,
+                        yAxisIndex: idx
+                    };
+                }
+            });
+
+            const hasMultipleSeries = series.length > 1;
+
+            const option = {
+                backgroundColor: '#fff',
+                animation: true,
+                tooltip: {
+                    trigger: isScatter ? 'item' : 'axis',
+                    formatter: isScatter
+                        ? p => `${xCol}: ${p.value[0]}<br/>${p.seriesName}: ${p.value[1]}`
+                        : params => {
+                            const idx = params[0].dataIndex;
+                            const date = xData[idx];
+                            return params.map(p =>
+                                `<span style="color:${p.color};">●</span> ${p.seriesName}: ${p.value}`
+                            ).join('<br/>') + (date ? `<br/><span style="color:#999;font-size:11px">${date}</span>` : '');
+                        }
+                },
+                legend: hasMultipleSeries ? {
+                    top: 2, textStyle: { fontSize: 12 },
+                    data: effectiveYCols
+                } : { show: false },
+                grid: { left: 50, right: hasMultipleSeries ? 60 : 20, top: hasMultipleSeries ? 36 : 16, bottom: 60 },
+                xAxis: isScatter
+                    ? { type: numericSet.has(xCol) ? 'value' : 'category', scale: true, splitLine: { lineStyle: { color: '#f0f0f0' } }, axisLabel: { fontSize: 11 } }
+                    : { type: 'category', data: xData, axisLabel: { fontSize: 11, rotate: 30, interval: Math.floor(xData.length / 12) }, splitLine: { show: false } },
+                yAxis: effectiveYCols.map((col, idx) => ({
+                    type: 'value',
+                    name: hasMultipleSeries ? '' : col,
+                    position: idx === 0 ? 'left' : 'right',
+                    offset: idx > 1 ? (idx - 1) * 60 : 0,
+                    splitLine: { lineStyle: { color: '#f0f0f0' } },
+                    axisLabel: { fontSize: 11 },
+                    scale: true
+                })),
+                dataZoom: [
+                    { type: 'inside', xAxisIndex: 0, start: 0, end: 100 },
+                    {
+                        type: 'slider',
+                        xAxisIndex: 0,
+                        start: 0,
+                        end: 100,
+                        height: 20,
+                        bottom: 0,
+                        borderColor: '#e8e8e8',
+                        fillerColor: 'rgba(24,144,255,0.1)',
+                        handleStyle: { color: '#1890ff' },
+                        textStyle: { fontSize: 11 }
+                    }
+                ],
+                series
+            };
+
+            dataChart.setOption(option);
+            dataChart.resize();
+        }
+
+        // 窗口调整时重绘图表
+        window.addEventListener('resize', () => {
+            if (dataChart) dataChart.resize();
+            if (icChart) icChart.resize();
+        });
+
+        function drawICChart(data) {
+            const chartDom = document.getElementById('ic-chart');
+            if (!chartDom) return;
+
+            if (icChart) icChart.dispose();
+            icChart = echarts.init(chartDom);
+
+            // ---- 数据提取 ----
+            let icVals = [], icDates = [];
+            if (data && data.ic_series && data.ic_series.length > 0) {
+                data.ic_series.forEach(item => {
+                    if (item.value != null) {
+                        icDates.push(item.date);
+                        icVals.push(item.value);
+                    }
+                });
+            }
+            const icMean = icVals.length ? icVals.reduce((a, b) => a + b, 0) / icVals.length : 0;
+
+            let cumVals = [], cumDates = [];
+            if (data && data.return_series && data.return_series.length > 0) {
+                data.return_series.forEach(item => {
+                    cumDates.push(item.date);
+                    cumVals.push(item.value);
+                });
+            }
+
+            let factorVals = [];
+            if (data && data.factor_series && data.factor_series.length > 0) {
+                factorVals = data.factor_series.map(item => item.value).filter(v => v != null && !isNaN(v));
+            }
+
+            let timingVals = [];
+            if (data && data.timing_returns && data.timing_returns.length > 0) {
+                timingVals = data.timing_returns.map(item => item.value).filter(v => v != null && !isNaN(v));
+            }
+
+            // 因子+价格对比：标准化因子（左轴）+ 价格（右轴）
+            // 后端已保证 factor_series 和 price_series 日期完全对齐，直接按位置拼接
+            let fvpFactorNorm = [], fvpPrice = [], fvpDates = [];
+            let fvpPriceMin, fvpPriceMax;
+            if (data && data.factor_series && data.price_series) {
+                const flen = (data.factor_series || []).length;
+                const plen = (data.price_series || []).length;
+                const len = Math.min(flen, plen);
+                const fArr = [];
+                for (let i = 0; i < len; i++) {
+                    const fv = (data.factor_series[i] || {}).value;
+                    const pv = (data.price_series[i] || {}).value;
+                    const fd = (data.factor_series[i] || {}).date;
+                    if (fv != null && !isNaN(fv) && pv != null && !isNaN(pv)) {
+                        fArr.push(fv);
+                        fvpDates.push(fd);
+                        fvpPrice.push(pv);
+                    }
+                }
+                if (fvpPrice.length > 0) {
+                    fvpPriceMin = Math.min(...fvpPrice);
+                    fvpPriceMax = Math.max(...fvpPrice);
+                }
+                const m = fArr.reduce((a, b) => a + b, 0) / (fArr.length || 1);
+                const s = Math.sqrt(fArr.reduce((a, b) => a + (b - m) ** 2, 0) / (fArr.length || 1)) || 1;
+                fvpFactorNorm = fArr.map(v => +((v - m) / s).toFixed(4));
+            }
+
+            // ---- 生成直方图（30个桶）----
+            function makeHistogram(vals, bins = 30) {
+                if (!vals || vals.length === 0) return [];
+                const min = Math.min(...vals), max = Math.max(...vals);
+                if (min === max) return [[min, 1]];
+                const step = (max - min) / bins;
+                const counts = new Array(bins).fill(0);
+                vals.forEach(v => {
+                    const idx = Math.min(Math.floor((v - min) / step), bins - 1);
+                    counts[idx]++;
+                });
+                return counts.map((c, i) => [+(min + step * (i + 0.5)).toFixed(6), c]);
+            }
+            const factorHist = makeHistogram(factorVals);
+            const timingHist = makeHistogram(timingVals);
+
+            // 智能 label 间隔：每 80~120 个点显示一个标签，避免太密也避免 dataZoom 误显示截断字符
+            const icInterval = icDates.length > 200 ? Math.floor(icDates.length / 10) : 0;
+            const fvpInterval = fvpDates.length > 200 ? Math.floor(fvpDates.length / 10) : 0;
+            const cumInterval = cumDates.length > 200 ? Math.floor(cumDates.length / 10) : 0;
+
+            // ---- 5个 grid（全用 %，避免混用 px）----
+            // row1 top=4%, row2 top=37%, row3 top=70%; 每行 height=30%; 左列48% 右列48%
+            const G = [
+                { left: '1%',  width: '48%', top: '4%',  height: '30%', containLabel: true },  // 0 IC
+                { left: '51%', width: '48%', top: '4%',  height: '30%', containLabel: true },  // 1 因子分布
+                { left: '1%',  width: '48%', top: '37%', height: '30%', containLabel: true },  // 2 因子vs价格
+                { left: '51%', width: '48%', top: '37%', height: '30%', containLabel: true },  // 3 收益分布
+                { left: '1%',  width: '48%', top: '70%', height: '28%', containLabel: true }   // 4 累计收益
+            ];
+
+            icChart.setOption({
+                tooltip: { trigger: 'axis', axisPointer: { type: 'line' } },
+                animation: false,
+                dataZoom: [
+                    { type: 'inside', xAxisIndex: [0, 2, 4], start: 0, end: 100 },
+                    { type: 'slider', xAxisIndex: [0, 2, 4], start: 0, end: 100, height: 18, bottom: 4, borderColor: '#ddd' }
+                ],
+
+                // 标题（全用 %）
+                title: [
+                    { text: 'IC时间序列',   left: '1%',  top: '1%',  textStyle: { fontSize: 12, fontWeight: 'bold' } },
+                    { text: '因子分布',     left: '51%', top: '1%',  textStyle: { fontSize: 12, fontWeight: 'bold' } },
+                    { text: '因子 vs 价格', left: '1%',  top: '34%', textStyle: { fontSize: 12, fontWeight: 'bold' } },
+                    { text: '收益分布',     left: '51%', top: '34%', textStyle: { fontSize: 12, fontWeight: 'bold' } },
+                    { text: '累计收益曲线', left: '1%',  top: '67%', textStyle: { fontSize: 12, fontWeight: 'bold' } }
+                ],
+
+                // 5个 grid
+                grid: G,
+
+                // X轴
+                xAxis: [
+                    { type: 'category', gridIndex: 0, data: icDates,  axisLabel: { fontSize: 9, rotate: 45, interval: icInterval }, splitLine: { show: false } },
+                    { type: 'category', gridIndex: 1, axisLabel: { fontSize: 9 }, splitLine: { show: false } },
+                    { type: 'category', gridIndex: 2, data: fvpDates, axisLabel: { fontSize: 9, rotate: 45, interval: fvpInterval }, splitLine: { show: false } },
+                    { type: 'category', gridIndex: 3, axisLabel: { fontSize: 9 }, splitLine: { show: false } },
+                    { type: 'category', gridIndex: 4, data: cumDates, axisLabel: { fontSize: 9, rotate: 45, interval: cumInterval }, splitLine: { show: false } }
+                ],
+
+                // Y轴
+                yAxis: [
+                    { type: 'value', gridIndex: 0, axisLabel: { fontSize: 9 }, splitLine: { lineStyle: { color: '#eee' } } },
+                    { type: 'value', gridIndex: 1, show: false },
+                    { type: 'value', gridIndex: 2, position: 'left',  axisLabel: { fontSize: 9 }, splitLine: { lineStyle: { color: '#eee' } } },
+                    { type: 'value', gridIndex: 2, position: 'right', axisLabel: { fontSize: 9, formatter: v => v.toFixed(2) }, splitLine: { lineStyle: { color: '#eee' } }, min: fvpPriceMin, max: fvpPriceMax },
+                    { type: 'value', gridIndex: 3, show: false },
+                    { type: 'value', gridIndex: 4, show: false },
+                    { type: 'value', gridIndex: 4, axisLabel: { fontSize: 9 }, splitLine: { lineStyle: { color: '#eee' } } }
+                ],
+
+                series: [
+                    // 0: IC时间序列
+                    {
+                        type: 'line', xAxisIndex: 0, yAxisIndex: 0,
+                        data: icVals,
+                        smooth: true, symbol: 'none',
+                        lineStyle: { color: '#1890ff', width: 1.5 },
+                        areaStyle: { color: 'rgba(24,144,255,0.15)' },
+                        markLine: {
+                            silent: true, symbol: 'none',
+                            lineStyle: { color: '#52c41a', type: 'dashed', width: 1 },
+                            label: { position: 'end', fontSize: 9, formatter: icMean.toFixed(4) },
+                            data: [{ yAxis: icMean }]
+                        }
+                    },
+                    // 1: 因子分布（柱状）
+                    {
+                        type: 'bar', xAxisIndex: 1, yAxisIndex: 1,
+                        data: factorHist,
+                        barWidth: '80%',
+                        itemStyle: { color: 'rgba(245,34,45,0.7)', borderRadius: [2, 2, 0, 0] }
+                    },
+                    // 2: 因子标准化（左轴，grid2第一个y轴=yAxisIndex:2）
+                    {
+                        type: 'line', xAxisIndex: 2, yAxisIndex: 2,
+                        data: fvpFactorNorm,
+                        smooth: true, symbol: 'none',
+                        lineStyle: { color: '#f5222d', width: 1.5 },
+                        name: '因子(标准化)'
+                    },
+                    // 3: 价格（右轴，grid2第二个y轴=yAxisIndex:3）
+                    {
+                        type: 'line', xAxisIndex: 2, yAxisIndex: 3,
+                        data: fvpPrice,
+                        smooth: true, symbol: 'none',
+                        lineStyle: { color: '#1890ff', width: 1.5 },
+                        name: '价格'
+                    },
+                    // 4: 累计收益曲线
+                    {
+                        type: 'line', xAxisIndex: 4, yAxisIndex: 6,
+                        data: cumVals,
+                        smooth: true, symbol: 'none',
+                        lineStyle: { color: '#52c41a', width: 1.5 },
+                        areaStyle: { color: 'rgba(82,196,26,0.15)' }
+                    },
+                    // 5: 收益分布（柱状）
+                    {
+                        type: 'bar', xAxisIndex: 3, yAxisIndex: 4,
+                        data: timingHist,
+                        barWidth: '80%',
+                        itemStyle: { color: 'rgba(24,144,255,0.7)', borderRadius: [2, 2, 0, 0] }
+                    }
+                ]
+            }, true);
+        }
+
+        document.getElementById('to-step-4').addEventListener('click', () => goToStep(4));
+        document.getElementById('back-to-3').addEventListener('click', () => goToStep(3));
+
+        // ===== AI 诊断 =====
+        document.getElementById('run-diagnosis').addEventListener('click', async function() {
+            const btn = this;
+            const placeholder = document.getElementById('diagnosis-placeholder');
+            const resultDiv = document.getElementById('diagnosis-result');
+
+            const lastResult = window.lastBacktestResult;
+            if (!lastResult) {
+                alert('请先在步骤4「回测验证」完成回测');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '诊断中...';
+
+            try {
+                const response = await fetch(API_BASE + '/api/optimize/diagnose', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        factor_name: currentFactorName || 'Unknown',
+                        ic_mean: lastResult.ic_mean,
+                        ic_std: lastResult.ic_std,
+                        ir: lastResult.ir,
+                        ic_positive_ratio: lastResult.ic_positive_ratio,
+                        ic_tstat: lastResult.ic_tstat || 0,
+                        annual_return: lastResult.annual_return,
+                        capital_gain: lastResult.capital_gain || 0,
+                        win_rate: lastResult.win_rate || 0,
+                        profit_loss_ratio: lastResult.profit_loss_ratio || 0,
+                        sharpe_ratio: lastResult.sharpe_ratio || 0,
+                        max_drawdown: lastResult.max_drawdown,
+                        turnover: lastResult.turnover,
+                        pass_test: lastResult.pass_test,
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 切换显示
+                    placeholder.classList.add('hidden');
+                    resultDiv.classList.remove('hidden');
+
+                    // 填充指标摘要
+                    document.getElementById('diag-ic').innerHTML =
+                        `IC均值: <b>${lastResult.ic_mean.toFixed(4)}</b> <span style="color:${lastResult.ic_mean > 0.02 ? '#52c41a' : '#faad14'}">${lastResult.ic_mean > 0.02 ? '✓' : '✗'}</span>`;
+                    document.getElementById('diag-ir').innerHTML =
+                        `IR: <b>${lastResult.ir.toFixed(3)}</b> <span style="color:${lastResult.ir > 0.3 ? '#52c41a' : '#faad14'}">${lastResult.ir > 0.3 ? '✓' : '✗'}</span>`;
+                    document.getElementById('diag-score').innerHTML =
+                        `综合评分: <b>${data.overall_score.toFixed(1)}</b>/10`;
+
+                    const statusEl = document.getElementById('diag-status');
+                    if (data.pass_test) {
+                        statusEl.className = 'tag tag-green';
+                        statusEl.textContent = '✓ 通过检验';
+                    } else {
+                        statusEl.className = 'tag tag-red';
+                        statusEl.textContent = '✗ 未通过';
+                    }
+
+                    // 填充问题列表
+                    const issuesEl = document.getElementById('diagnosis-issues');
+                    if (data.issues && data.issues.length > 0) {
+                        issuesEl.innerHTML = '<div style="margin-bottom:6px;font-weight:500;color:#d46b08;">发现的问题：</div>' +
+                            '<ul style="margin:0;padding-left:18px;color:#8c8c8c;font-size:13px;">' +
+                            data.issues.map(i => `<li>${i}</li>`).join('') + '</ul>';
+                    } else {
+                        issuesEl.innerHTML = '<div style="color:#52c41a;font-size:13px;">✅ 未发现明显问题</div>';
+                    }
+
+                    // 填充建议
+                    const sugEl = document.getElementById('diagnosis-suggestions');
+                    if (data.suggestions && data.suggestions.length > 0) {
+                        sugEl.innerHTML = '<div style="margin-bottom:6px;font-weight:500;color:#1890ff;">优化建议：</div>' +
+                            '<ul style="margin:0;padding-left:18px;color:#595959;font-size:13px;">' +
+                            data.suggestions.map(s => `<li>${s}</li>`).join('') + '</ul>';
+                    }
+
+                    // 如果有诊断正文，也显示
+                    if (data.diagnosis) {
+                        sugEl.innerHTML += `<div style="margin-top:8px;padding:8px 12px;background:#f5f5f5;border-radius:6px;font-size:13px;color:#595959;">💡 ${data.diagnosis}</div>`;
+                    }
+                } else {
+                    alert('诊断失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error('诊断API调用失败:', error);
+                alert('诊断请求失败，请检查网络或服务器日志');
+            }
+
+            btn.disabled = false;
+            btn.textContent = '🤖 重新诊断';
+        });
+
+        // ==================== 优化（SSE 流式日志）====================
+        document.getElementById('start-optimize').addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = '优化中...';
+
+            const codeEditor = document.getElementById('code-editor');
+            const factorCode = codeEditor.value;
+            if (!factorCode || !currentClassName) {
+                alert('请先生成因子代码');
+                btn.disabled = false;
+                btn.textContent = '🚀 开始优化';
+                return;
+            }
+
+            // 清空日志 + 显示进度条 + 隐藏旧结果
+            document.getElementById('optimize-log-content').textContent = '';
+            document.getElementById('optimize-progress-bar').style.display = 'block';
+            document.getElementById('optimize-card-title').textContent = '⚙️ 优化进行中...';
+            document.getElementById('optimize-result').classList.add('hidden');
+            document.getElementById('comparison-card').classList.add('hidden');
+            appendOptimizeLog('▶ 开始优化...');
+
+            // 尝试获取完整数据，供后端 fallback 使用
+            let fullData = null;
+            try {
+                const dataResp = await fetch(API_BASE + '/api/data/full');
+                if (dataResp.ok) {
+                    const dataJson = await dataResp.json();
+                    if (dataJson.success) {
+                        fullData = dataJson;
+                    }
+                }
+            } catch (_) {}
+
+            try {
+                // 启动 SSE 流式优化（后台线程 + 实时日志推送）
+                appendOptimizeLog('▶ 发送请求...');
+                const resp = await fetch(API_BASE + '/api/optimize/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        factor_code: factorCode,
+                        class_name: currentClassName,
+                        factor_name: currentFactorName || 'Unknown',
+                        score_metric: document.querySelector('input[name="target"]:checked')?.value || 'ir',
+                        max_iterations: parseInt(document.getElementById('max-iterations-input')?.value || '2'),
+                        horizon: window.lastBacktestResult?.horizon || 5,
+                        window: window.lastBacktestResult?.window || 60,
+                        original_backtest_result: window.lastBacktestResult || null,
+                        ...(fullData ? { data: fullData.data, columns: fullData.columns } : {})
+                    })
+                });
+
+                console.log('[FETCH] resp.ok:', resp.ok, 'status:', resp.status, 'content-type:', resp.headers.get('content-type'));
+                if (!resp.ok) {
+                    const text = await resp.text();
+                    appendOptimizeLog('❌ 启动失败 HTTP ' + resp.status + ': ' + text.substring(0, 200));
+                    document.getElementById('optimize-card-title').textContent = '❌ 启动失败';
+                    return;
+                }
+
+                appendOptimizeLog('▶ 优化已启动，实时接收日志...');
+
+                // SSE 流式读取（与步骤3代码生成相同的架构）
+                const reader = resp.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    const text = decoder.decode(value, { stream: true });
+                    console.log('[SSE raw]:', text.substring(0, 200));
+                    buffer += text;
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        console.log('[SSE line]:', JSON.stringify(trimmed.substring(0, 100)));
+                        const jsonStr = trimmed.startsWith('data:')
+                            ? trimmed.slice(5).trim()
+                            : (trimmed.startsWith('{') ? trimmed : null);
+                        if (!jsonStr) { console.log('[SSE skip] not JSON'); continue; }
+                        try {
+                            const d = JSON.parse(jsonStr);
+                            console.log('[SSE parsed]:', d.type, d.type === 'log' ? d.msg?.substring(0,60) : '');
+                            if (d.type === 'log') {
+                                appendOptimizeLog(d.msg);
+                            } else if (d.type === 'done') {
+                                document.getElementById('optimize-card-title').textContent = '✅ 优化完成';
+                                if (d.success && d.result) {
+                                    currentParams = d.result.best_params || {};
+                                    window.lastOptimizeResult = d.result;
+                                    showOptimizeResult(d.result);
+                                } else {
+                                    appendOptimizeLog('❌ 优化失败: ' + (d.result?.error || '未知错误'));
+                                    showOptimizeResult(null);
+                                }
+                                break;
+                            } else if (d.type === 'error') {
+                                appendOptimizeLog('❌ ' + d.msg);
+                                document.getElementById('optimize-card-title').textContent = '❌ 优化失败';
+                            }
+                        } catch (e) {
+                            console.log('[SSE JSON parse error]:', e.message, '| raw:', trimmed.substring(0, 80));
+                        }
+                    }
+                }
+
+            } catch (error) {
+                console.error('优化请求失败:', error);
+                appendOptimizeLog('❌ 请求失败: ' + error.message);
+                document.getElementById('optimize-card-title').textContent = '❌ 优化失败';
+            }
+
+            btn.disabled = false;
+            btn.textContent = '🚀 开始优化';
+        });
+
+        // 显示优化结果
+        function showOptimizeResult(data) {
+            const hasResult = data && data.success;
+
+            // 隐藏进度条 + 更新标题
+            document.getElementById('optimize-progress-bar').style.display = 'none';
+            document.getElementById('optimize-card-title').textContent = hasResult ? '✅ 优化完成' : '⚠️ 优化未完成';
+
+            if (!hasResult) {
+                document.getElementById('optimize-result').classList.add('hidden');
+                document.getElementById('comparison-card').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('optimize-result').classList.remove('hidden');
+            document.getElementById('comparison-card').classList.remove('hidden');
+
+            // ---- 更新参数配置区：显示识别到的参数 ----
+            const configCard = document.getElementById('detected-params-display');
+            if (data && data.detected_params && data.detected_params.length > 0) {
+                configCard.innerHTML = data.detected_params.map(p => `
+                    <div style="margin-bottom: 8px;">
+                        <span style="font-weight:500;min-width:80px;display:inline-block;">${p.name}:</span>
+                        ${p.values.map(v => `<span class="tag tag-blue">${v}</span>`).join(' ')}
+                        <span style="color:#8c8c8c;font-size:12px;margin-left:6px;">(${p.values.length}个值)</span>
+                    </div>
+                `).join('');
+            } else {
+                configCard.innerHTML = '<div style="color:#faad14;font-size:13px;">⚠️ 未识别到可调参数（因子代码中无 params.get() 调用）</div>';
+            }
+
+            // ---- 更新最优参数卡片 ----
+            const resultCard = document.getElementById('optimize-result');
+            if (data && data.best_params && Object.keys(data.best_params).length > 0) {
+                resultCard.classList.remove('hidden');
+                const paramsHtml = Object.entries(data.best_params).map(([k, v]) =>
+                    `<div class="desc-item"><span class="desc-label">${k}:</span><span class="desc-value">${v}</span></div>`
+                ).join('');
+                document.getElementById('optimize-params').innerHTML = paramsHtml;
+                document.getElementById('optimize-score').textContent =
+                    `${data.score_metric.toUpperCase()} = ${data.best_score != null ? data.best_score.toFixed(3) : '—'}`;
+            } else {
+                resultCard.classList.add('hidden');
+            }
+
+
+            // ---- 优化前后对比表 ----
+            if (data && data.final_metrics) {
+                const orig = window.lastBacktestResult || {};
+                const opt = data.final_metrics;
+                const origParams = orig.params || {};
+                const bestParams = data.best_params || {};
+
+                // 合并所有涉及的参数
+                const allParamKeys = [...new Set([...Object.keys(origParams), ...Object.keys(bestParams)])];
+
+                const metrics = [
+                    { label: 'IC均值', orig: orig.ic_mean, opt: opt.ic_mean, fmt: v => v != null ? v.toFixed(4) : '—', ok: v => v > 0.02 },
+                    { label: 'IR', orig: orig.ir, opt: opt.ir, fmt: v => v != null ? v.toFixed(3) : '—', ok: v => v > 0.3 },
+                    { label: '年化收益', orig: orig.annual_return, opt: opt.annual_return, fmt: v => v != null ? (v * 100).toFixed(2) + '%' : '—', ok: v => v > 0 },
+                    { label: '夏普比率', orig: orig.sharpe_ratio, opt: opt.sharpe_ratio, fmt: v => v != null ? v.toFixed(3) : '—', ok: v => v > 0.5 },
+                    { label: '最大回撤', orig: orig.max_drawdown, opt: opt.max_drawdown, fmt: v => v != null ? (v * 100).toFixed(2) + '%' : '—', ok: v => v > -0.2 },
+                ];
+
+                const tbody = document.getElementById('comparison-tbody');
+
+                let html = '';
+
+                // 参数行（只显示有参数的情况）
+                if (allParamKeys.length > 0) {
+                    html += '<tr><td colspan="5" style="background:#f5f5f5;font-weight:600;font-size:12px;color:#595959;">参数</td></tr>';
+                    allParamKeys.forEach(key => {
+                        const ov = origParams[key] !== undefined ? origParams[key] : '—';
+                        const nv = bestParams[key] !== undefined ? bestParams[key] : '—';
+                        const changed = ov !== '—' && nv !== '—' && ov !== nv;
+                        html += `<tr>
+                            <td style="padding-left:16px;color:#888;">${key}</td>
+                            <td>${ov}</td>
+                            <td>${nv}</td>
+                            <td style="color:${changed ? '#faad14' : '#52c41a'};font-weight:500;">${changed ? '已调整' : '—'}</td>
+                            <td></td>
+                        </tr>`;
+                    });
+                }
+
+                // 指标行
+                html += '<tr><td colspan="5" style="background:#f5f5f5;font-weight:600;font-size:12px;color:#595959;">指标</td></tr>';
+                metrics.forEach(m => {
+                    const ov = m.orig != null ? m.fmt(m.orig) : '—';
+                    const nv = m.opt != null ? m.fmt(m.opt) : '—';
+                    const origVal = m.orig ?? null, optVal = m.opt ?? null;
+                    let change = '—', color = '';
+                    if (origVal != null && optVal != null) {
+                        const diff = optVal - origVal;
+                        // 年化收益和最大回撤以 % 为单位展示，变化也换算为百分点
+                        const isPct = (m.label === '年化收益' || m.label === '最大回撤');
+                        if (isPct) {
+                            change = (diff >= 0 ? '+' : '') + (diff * 100).toFixed(2) + '%';
+                        } else {
+                            change = (diff >= 0 ? '+' : '') + diff.toFixed(4);
+                        }
+                        color = diff > 0 ? '#52c41a' : diff < 0 ? '#ff4d4f' : '#888';
+                    }
+                    html += `<tr>
+                        <td>${m.label}</td>
+                        <td>${ov}</td>
+                        <td>${nv}</td>
+                        <td style="color:${color};font-weight:500;">${change}</td>
+                        <td>${optVal != null ? `<span class="tag ${m.ok(optVal) ? 'tag-green' : 'tag-red'}">${m.ok(optVal) ? '✓' : '✗'}</span>` : '—'}</td>
+                    </tr>`;
+                });
+
+                tbody.innerHTML = html;
+            }
+        }
+
+        // ==================== 因子库 ====================
+        async function loadFactorLibrary() {
+            const emptyEl = document.getElementById('factor-lib-empty');
+            const listEl = document.getElementById('factor-lib-list');
+            listEl.innerHTML = '<div style="text-align:center;padding:20px;color:#999;">加载中...</div>';
+            listEl.classList.remove('hidden');
+
+            try {
+                const resp = await fetch(API_BASE + '/api/factor/list');
+                const data = await resp.json();
+                if (!data.success || !data.factors || data.factors.length === 0) {
+                    emptyEl.classList.remove('hidden');
+                    listEl.classList.add('hidden');
+                    return;
+                }
+                emptyEl.classList.add('hidden');
+                listEl.classList.remove('hidden');
+                listEl.innerHTML = data.factors.map(f => {
+                    const m = f.metrics || {};
+                    const icOk = m.ic_mean > 0.02;
+                    const irOk = m.ir > 0.3;
+                    return `<div class="factor-lib-item" data-id="${f.id}">
+                        <div class="factor-lib-header">
+                            <span class="factor-lib-name">${f.factor_name}</span>
+                            <span class="factor-lib-class">${f.class_name}</span>
+                            <span class="factor-lib-time">${f.saved_at ? f.saved_at.slice(0, 16).replace('T', ' ') : ''}</span>
+                        </div>
+                        <div class="factor-lib-metrics">
+                            <span class="metric-chip ${icOk ? 'ok' : 'warn'}">IC ${m.ic_mean != null ? m.ic_mean.toFixed(4) : '—'}</span>
+                            <span class="metric-chip ${irOk ? 'ok' : 'warn'}">IR ${m.ir != null ? m.ir.toFixed(3) : '—'}</span>
+                            <span class="metric-chip">年化 ${m.annual_return != null ? (m.annual_return * 100).toFixed(2) + '%' : '—'}</span>
+                        </div>
+                        <div class="factor-lib-actions">
+                            <button class="btn btn-sm" onclick="loadFactorFromLib('${f.id}')">📂 加载</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteFactorFromLib('${f.id}')">🗑 删除</button>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                listEl.innerHTML = '<div style="color:#ff4d4f;text-align:center;padding:20px;">加载失败: ' + e.message + '</div>';
+            }
+        }
+
+        window.loadFactorFromLib = async function(factorId) {
+            try {
+                const resp = await fetch(API_BASE + '/api/factor/' + factorId);
+                const data = await resp.json();
+                if (!data.success) { alert('加载失败'); return; }
+                const f = data.factor;
+                currentFactorName = f.factor_name;
+                currentClassName = f.class_name;
+                currentFactorCode = f.factor_code;
+                currentParams = f.metrics && f.metrics.best_params || {};
+
+                // 恢复假设候选
+                if (f.hypothesis && f.hypothesis.id) {
+                    hypothesisCandidates = [f.hypothesis];
+                    selectedHypothesis = f.hypothesis.id;
+                    hypothesesShown = true;
+                    showHypothesisCandidates();
+                }
+
+                document.getElementById('factor-editor')?.classList.remove('hidden');
+                // 切换回因子实验室，同时记录当前是否在 step-5 以便恢复日志面板状态
+                const wasOnStep5 = (currentStep === 4);
+                document.querySelector('[data-page="factor-lab"]').click();
+                // 如果是从 step-5 跳转过来，加载因子后仍回到 step-5
+                if (wasOnStep5) {
+                    setTimeout(() => goToStep(4), 0);
+                }
+                // 填充代码
+                const editor = document.getElementById('code-editor');
+                if (editor) {
+                    editor.value = f.factor_code;
+                    updateCodeStatus();
+                }
+                alert(`已加载因子「${f.factor_name}」，请前往步骤4进行回测`);
+            } catch (e) {
+                alert('加载失败: ' + e.message);
+            }
+        };
+
+        window.deleteFactorFromLib = async function(factorId) {
+            if (!confirm('确认删除该因子？')) return;
+            try {
+                const resp = await fetch(API_BASE + '/api/factor/' + factorId, { method: 'DELETE' });
+                const data = await resp.json();
+                if (data.success) {
+                    loadFactorLibrary();
+                } else {
+                    alert('删除失败');
+                }
+            } catch (e) {
+                alert('删除失败: ' + e.message);
+            }
+        };
+
+        // ==================== 保存因子按钮 ====================
+        document.getElementById('save-factor-btn')?.addEventListener('click', async function() {
+            const btn = this;
+            if (!currentFactorCode || !currentClassName) {
+                alert('请先生成因子代码');
+                return;
+            }
+            // 如果有最新优化结果，用优化后的参数；否则用回测参数
+            const metrics = window.lastOptimizeResult?.final_metrics || window.lastBacktestResult || {};
+            const selected = hypothesisCandidates.find(h => h.id === selectedHypothesis);
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+            try {
+                const resp = await fetch(API_BASE + '/api/factor/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        factor_name: currentFactorName || '未命名因子',
+                        class_name: currentClassName,
+                        factor_code: currentFactorCode,
+                        hypothesis: selected || {},
+                        metrics: metrics,
+                    })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    btn.textContent = '✓ 已保存';
+                    btn.style.background = '#52c41a';
+                    setTimeout(() => {
+                        btn.textContent = '💾 保存因子';
+                        btn.style.background = '';
+                        btn.disabled = false;
+                    }, 2000);
+                } else {
+                    alert('保存失败: ' + (data.error || '未知错误'));
+                    btn.disabled = false;
+                    btn.textContent = '💾 保存因子';
+                }
+            } catch (e) {
+                alert('保存失败: ' + e.message);
+                btn.disabled = false;
+                btn.textContent = '💾 保存因子';
+            }
+        });
+
+        // ==================== 侧边栏导航 ====================
+        const pageNames = {
+            'factor-lab': '因子实验室',
+            'factor-lib': '因子库',
+            'history': '历史记录',
+            'settings': '设置',
+            'help': '帮助中心'
+        };
+
+        // 每个页面管辖的元素选择器
+        const pageElements = {
+            'factor-lab':  ['.step-container', '.step-content'],
+            'factor-lib':  ['#page-factor-lib'],
+            'history':     ['#page-history'],
+            'settings':    ['#page-settings'],
+            'help':        ['#page-help']
+        };
+
+        function navigateTo(page) {
+            const config = pageElements[page];
+            if (!config) return;
+
+            // 1. 更新侧边栏激活状态
+            document.querySelectorAll('.sidebar-nav-item').forEach(n => n.classList.remove('active'));
+            document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+
+            // 2. 更新页面标题
+            document.getElementById('page-title').textContent = pageNames[page] || '因子实验室';
+
+            // 3. 隐藏所有页面元素
+            Object.values(pageElements).flat().forEach(sel => {
+                document.querySelectorAll(sel).forEach(el => el.classList.add('hidden'));
+            });
+
+            // 4. 显示目标页面元素
+            if (page === 'factor-lab') {
+                // 因子实验室：只显示步骤条和当前步骤
+                document.querySelector('.step-container')?.classList.remove('hidden');
+                document.getElementById(`step-${currentStep}`)?.classList.remove('hidden');
+            } else {
+                config.forEach(sel => {
+                    document.querySelectorAll(sel).forEach(el => el.classList.remove('hidden'));
+                });
+            }
+
+            // 5. 页面专属初始化
+            if (page === 'factor-lib') {
+                loadFactorLibrary();
+            } else if (page === 'settings') {
+                loadSettings();
+            }
+        }
+
+        // ==================== 设置页 ====================
+        async function loadSettings() {
+            const loading = document.getElementById('settings-loading');
+            const form = document.getElementById('settings-form');
+            try {
+                const resp = await fetch(API_BASE + '/api/settings');
+                const data = await resp.json();
+                if (!data.success) throw new Error(data.error);
+                const s = data.settings;
+                for (const [key, val] of Object.entries(s)) {
+                    if (key.endsWith('_masked')) continue;
+                    const el = document.getElementById('s-' + key);
+                    if (!el) continue;
+                    // 去掉 Python 字符串的引号
+                    let displayVal = val.replace(/^["']|["']$/g, '');
+                    el.value = displayVal;
+                }
+                // 根据模型类型切换官方key/自定义key显示
+                toggleKeyFields(document.getElementById('s-MODEL_NAME').value);
+                loading.style.display = 'none';
+                form.style.display = 'block';
+            } catch (e) {
+                loading.textContent = '加载失败: ' + e.message;
+            }
+        }
+
+        function toggleKeyFields(model) {
+            const official = document.getElementById('settings-official-keys');
+            const custom = document.getElementById('settings-custom-keys');
+            if (model === 'custom') {
+                official.style.display = 'none';
+                custom.style.display = 'block';
+            } else {
+                official.style.display = 'block';
+                custom.style.display = 'none';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('s-MODEL_NAME')?.addEventListener('change', function () {
+                toggleKeyFields(this.value);
+            });
+            document.getElementById('settings-save-btn')?.addEventListener('click', saveSettings);
+        });
+
+        async function saveSettings() {
+            const btn = document.getElementById('settings-save-btn');
+            const msg = document.getElementById('settings-msg');
+            const fields = [
+                'MODEL_NAME', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY',
+                'CUSTOM_MODEL_NAME', 'CUSTOM_API_KEY', 'CUSTOM_BASE_URL',
+                'MAX_TOKENS', 'TEMPERATURE',
+                'FACTORS_DIR', 'DATA_DIR', 'OUTPUT_DIR'
+            ];
+            const settings = {};
+            for (const key of fields) {
+                const el = document.getElementById('s-' + key);
+                if (el) {
+                    settings[key] = el.value.trim();
+                }
+            }
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+            msg.textContent = '';
+            try {
+                const resp = await fetch(API_BASE + '/api/settings', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({settings})
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    msg.textContent = '✓ 保存成功';
+                    msg.style.color = '#52c41a';
+                    setTimeout(() => msg.textContent = '', 3000);
+                } else {
+                    msg.textContent = '✗ ' + data.error;
+                    msg.style.color = '#ff4d4f';
+                }
+            } catch (e) {
+                msg.textContent = '✗ 保存失败: ' + e.message;
+                msg.style.color = '#ff4d4f';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '💾 保存配置';
+            }
+        }
+
+        document.querySelectorAll('.sidebar-nav-item').forEach(item => {
+            item.addEventListener('click', function () {
+                navigateTo(this.dataset.page);
+            });
+        });
+    </script>
+</body>
+</html>

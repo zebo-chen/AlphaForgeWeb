@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "app.py", line 18, in <module>
+    from api.factor import api_bp as factor_bp
+  File "./api/factor.py", line 16, in <module>
+    from core.factor_builder import FactorBuilder, FactorCode
+  File "./core/factor_builder.py", line 12, in <module>
+    from openai import OpenAI
+ModuleNotFoundError: No module named 'openai'
+Traceback (most recent call last):
+  File "app.py", line 18, in <module>
+    from api.factor import api_bp as factor_bp
+  File "./api/factor.py", line 16, in <module>
+    from core.factor_builder import FactorBuilder, FactorCode
+  File "./core/factor_builder.py", line 14, in <module>
+    import pandas as pd
+ModuleNotFoundError: No module named 'pandas'

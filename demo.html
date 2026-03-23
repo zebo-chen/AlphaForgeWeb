@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaForge - 因子挖掘实验室</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; min-height: 100vh; }
+
+        /* 整体布局 - 左侧边栏 */
+        .app-layout { display: flex; min-height: 100vh; }
+
+        /* 左侧边栏 */
+        .sidebar { width: 220px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); color: white; display: flex; flex-direction: column; box-shadow: 2px 0 8px rgba(0,0,0,0.1); }
+        .sidebar-logo { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-logo h1 { font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+        .sidebar-logo p { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+
+        .sidebar-nav { flex: 1; padding: 16px 0; }
+        .sidebar-nav-title { padding: 8px 20px; font-size: 11px; text-transform: uppercase; opacity: 0.5; letter-spacing: 1px; }
+        .sidebar-nav-item { display: flex; align-items: center; padding: 12px 20px; color: rgba(255,255,255,0.8); font-size: 14px; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; }
+        .sidebar-nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .sidebar-nav-item.active { background: rgba(24,144,255,0.15); color: #1890ff; border-left-color: #1890ff; }
+        .sidebar-nav-item .icon { margin-right: 12px; font-size: 16px; }
+        .sidebar-nav-item .badge { margin-left: auto; background: #ff4d4f; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-user { display: flex; align-items: center; gap: 10px; }
+        .sidebar-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #1890ff, #52c41a); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .sidebar-user-info { flex: 1; }
+        .sidebar-user-name { font-size: 13px; font-weight: 500; }
+        .sidebar-user-role { font-size: 11px; opacity: 0.6; }
+
+        /* 主内容区 */
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        .main-header { background: white; padding: 16px 24px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .main-title { font-size: 18px; font-weight: 600; }
+        .main-actions { display: flex; gap: 12px; }
+
+        .container { flex: 1; padding: 24px; max-width: none; }
+
+        /* 步骤条 */
+        .step-container { background: white; padding: 12px 24px; margin-bottom: 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; }
+        .step-container .step-bar { margin: 0; justify-content: flex-start; }
+        .step-bar { display: flex; justify-content: center; align-items: center; }
+        .step-item { display: flex; align-items: center; padding: 0 16px; position: relative; cursor: pointer; transition: all 0.2s; }
+        .step-item:hover { transform: translateY(-2px); }
+        .step-item:hover .step-circle { transform: scale(1.1); }
+        .step-item::after { content: ''; position: absolute; right: -8px; top: 50%; transform: translateY(-50%); width: 20px; height: 2px; background: #e8e8e8; }
+        .step-item:last-child::after { display: none; }
+        .step-item.finish::after { background: #1890ff; }
+        .step-item::before { content: ''; position: absolute; left: 0; top: 0; right: 0; bottom: 0; border-radius: 4px; }
+        .step-item:hover::before { background: rgba(24, 144, 255, 0.05); }
+        .step-circle { width: 28px; height: 28px; border-radius: 50%; background: #e8e8e8; color: #999; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; margin-right: 8px; transition: all 0.3s; flex-shrink: 0; }
+        .step-item.active .step-circle { background: #1890ff; color: white; box-shadow: 0 2px 8px rgba(24, 144, 255, 0.4); }
+        .step-item.finish .step-circle { background: #52c41a; color: white; }
+        .step-label { color: #999; font-size: 13px; transition: all 0.3s; }
+        .step-item.active .step-label { color: #1890ff; font-weight: 500; }
+        .step-item.finish .step-label { color: #52c41a; }
+
+        /* 卡片 */
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: #1f1f1f; }
+
+        /* 聊天区域 */
+        .chat-container { display: flex; flex-direction: column; height: 500px; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 16px; background: #fafafa; border-radius: 12px; margin-bottom: 16px; }
+
+        .message { display: flex; margin-bottom: 16px; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message.ai { align-items: flex-start; }
+        .message.user { align-items: flex-end; flex-direction: row-reverse; }
+
+        .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; margin: 0 12px; flex-shrink: 0; }
+        .avatar.ai { background: linear-gradient(135deg, #1890ff, #52c41a); color: white; }
+        .avatar.user { background: linear-gradient(135deg, #722ed1, #eb2f96); color: white; }
+
+        .message-content { max-width: 70%; }
+        .message-bubble { padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.6; }
+        .message.ai .message-bubble { background: white; border: 1px solid #e8e8e8; border-top-left-radius: 4px; }
+        .message.user .message-bubble { background: #1890ff; color: white; border-top-right-radius: 4px; }
+        .message-time { font-size: 11px; color: #999; margin-top: 4px; }
+
+        /* 假设候选 */
+        .hypothesis-candidate { background: white; border: 1px solid #e8e8e8; border-radius: 10px; padding: 16px; margin-top: 12px; cursor: pointer; transition: all 0.3s; }
+        .hypothesis-candidate:hover { border-color: #1890ff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(24,144,255,0.15); }
+        .hypothesis-candidate.selected { border-color: #1890ff; background: #e6f7ff; }
+        .hypothesis-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .hypothesis-name { font-weight: 600; font-size: 15px; }
+        .confidence-badge { padding: 2px 8px; border-radius: 4px; font-size: 12px; background: #fffbe6; color: #faad14; }
+
+        /* 快速提示 */
+        .quick-prompts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .quick-prompt { padding: 6px 12px; background: #f0f0f0; border: none; border-radius: 16px; font-size: 12px; color: #666; cursor: pointer; transition: all 0.2s; }
+        .quick-prompt:hover { background: #1890ff; color: white; }
+
+        /* 聊天输入 */
+        .chat-input-area { display: flex; gap: 12px; }
+        .chat-input { flex: 1; padding: 12px 16px; border: 1px solid #d9d9d9; border-radius: 24px; font-size: 14px; outline: none; transition: border-color 0.3s; }
+        .chat-input:focus { border-color: #1890ff; }
+        .send-btn { width: 48px; height: 48px; border-radius: 50%; background: #1890ff; color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.3s; }
+        .send-btn:hover { background: #40a9ff; transform: scale(1.05); }
+        .send-btn:disabled { background: #d9d9d9; cursor: not-allowed; transform: none; }
+
+        /* 代码编辑器 */
+        .code-editor-container { border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; }
+        .code-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: #f5f5f5; border-bottom: 1px solid #e8e8e8; }
+        .code-toolbar-left { display: flex; gap: 8px; }
+        .code-filename { font-size: 13px; font-weight: 500; color: #333; display: flex; align-items: center; gap: 8px; }
+        .code-editor { width: 100%; min-height: 300px; padding: 16px; background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; line-height: 1.6; border: none; outline: none; resize: vertical; }
+
+        /* 代码状态 */
+        .code-status { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-dot.success { background: #52c41a; }
+        .status-dot.warning { background: #faad14; }
+        .status-dot.error { background: #ff4d4f; }
+
+        /* 代码动作按钮 */
+        .code-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+        /* 代码对话框 */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.hidden { display: none; }
+        .modal { background: white; border-radius: 12px; width: 90%; max-width: 600px; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 16px; font-weight: 600; }
+        .modal-close { width: 32px; height: 32px; border: none; background: none; font-size: 20px; cursor: pointer; color: #999; }
+        .modal-close:hover { color: #333; }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 16px 20px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 12px; }
+
+        /* 修改建议输入 */
+        .suggestion-input { width: 100%; min-height: 120px; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; line-height: 1.6; resize: vertical; }
+        .suggestion-input:focus { outline: none; border-color: #1890ff; }
+
+        /* 建议示例 */
+        .suggestion-examples { margin-top: 12px; }
+        .suggestion-examples-title { font-size: 12px; color: #999; margin-bottom: 8px; }
+        .suggestion-example { display: inline-block; padding: 4px 10px; background: #f0f0f0; border-radius: 4px; font-size: 12px; color: #666; margin: 4px; cursor: pointer; }
+        .suggestion-example:hover { background: #1890ff; color: white; }
+
+        /* 代码对话 */
+        .code-chat-container { max-height: 200px; overflow-y: auto; margin-bottom: 16px; padding: 12px; background: #fafafa; border-radius: 8px; }
+        .code-chat-msg { margin-bottom: 12px; }
+        .code-chat-msg:last-child { margin-bottom: 0; }
+        .code-chat-role { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+        .code-chat-role.ai { color: #1890ff; }
+        .code-chat-role.user { color: #722ed1; }
+        .code-chat-content { font-size: 13px; color: #666; padding: 8px 12px; background: white; border-radius: 6px; border: 1px solid #e8e8e8; }
+
+        /* 按钮 */
+        .btn { padding: 8px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; transition: all 0.3s; border: 1px solid #d9d9d9; background: white; }
+        .btn:hover { border-color: #40a9ff; color: #40a9ff; }
+        .btn-primary { background: #1890ff; color: white; border: none; }
+        .btn-primary:hover { background: #40a9ff; }
+        .btn-primary:disabled { background: #d9d9d9; cursor: not-allowed; }
+        .btn-lg { padding: 12px 32px; font-size: 16px; }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
+        .btn-secondary { background: #f0f0f0; color: #666; border: 1px solid #d9d9d9; }
+        .btn-secondary:hover { background: #e8e8e8; color: #333; }
+
+        /* 指标卡片 */
+        .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 20px 0; }
+        .metric-card { background: #fafafa; padding: 20px; border-radius: 10px; text-align: center; }
+        .metric-value { font-size: 28px; font-weight: 700; color: #1890ff; }
+        .metric-label { font-size: 13px; color: #666; margin-top: 6px; }
+        .metric-card.warning .metric-value { color: #faad14; }
+        .metric-card.success .metric-value { color: #52c41a; }
+
+        /* 图表 */
+        .chart-container { height: 280px; background: #fafafa; border-radius: 10px; padding: 16px; margin-top: 16px; }
+        .chart-box { width: 100%; height: 100%; }
+
+        /* 热力图 */
+        .heatmap { display: flex; flex-direction: column; gap: 4px; margin: 16px 0; }
+        .heatmap-row { display: flex; gap: 4px; justify-content: center; }
+        .heatmap-cell { width: 90px; height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 14px; font-weight: 500; }
+        .heatmap-cell:hover { transform: scale(1.08); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .heatmap-cell.best { border: 3px solid #faad14; }
+
+        /* 表格 */
+        .table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        .table th, .table td { padding: 14px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+        .table th { background: #fafafa; font-weight: 600; color: #333; }
+
+        /* 警告框 */
+        .alert { padding: 14px 18px; border-radius: 8px; margin: 16px 0; display: flex; align-items: flex-start; gap: 12px; }
+        .alert-success { background: #f6ffed; border: 1px solid #b7eb8f; color: #52c41a; }
+        .alert-error { background: #fff1f0; border: 1px solid #ffccc7; color: #ff4d4f; }
+        .alert-warning { background: #fffbe6; border: 1px solid #ffe58f; color: #faad14; }
+        .alert-info { background: #e6f7ff; border: 1px solid #91d5ff; color: #1890ff; }
+
+        /* 加载 */
+        .loading { display: flex; align-items: center; gap: 12px; padding: 16px; }
+        .spinner { width: 20px; height: 20px; border: 2px solid #e8e8e8; border-top-color: #1890ff; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* 导航 */
+        .nav-buttons { display: flex; justify-content: space-between; margin-top: 24px; padding-top: 20px; border-top: 1px solid #f0f0f0; }
+
+        /* 描述 */
+        .desc-row { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 12px; }
+        .desc-item { display: flex; gap: 8px; }
+        .desc-label { color: #666; }
+        .desc-value { font-weight: 500; }
+
+        /* 标签 */
+        .tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .tag-gold { background: #fffbe6; color: #faad14; }
+        .tag-blue { background: #e6f7ff; color: #1890ff; }
+        .tag-green { background: #f6ffed; color: #52c41a; }
+
+        /* 进度条 */
+        .progress-wrap { margin: 16px 0; }
+        .progress-bar { height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #1890ff, #52c41a); transition: width 0.3s; }
+
+        /* 隐藏 */
+        .hidden { display: none !important; }
+
+        /* 确认框 */
+        .confirm-box { background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 10px; padding: 16px; margin-top: 16px; text-align: center; }
+
+        /* 切换按钮 */
+        .toggle-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+        .toggle-tab { padding: 10px 20px; border: 1px solid #d9d9d9; border-radius: 8px; background: white; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .toggle-tab:hover { border-color: #1890ff; color: #1890ff; }
+        .toggle-tab.active { background: #1890ff; color: white; border-color: #1890ff; }
+
+        /* 数据预览表格 */
+        .data-preview { max-height: 200px; overflow: auto; margin-top: 16px; border: 1px solid #e8e8e8; border-radius: 8px; }
+        .data-preview table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .data-preview th, .data-preview td { padding: 8px; text-align: center; border-bottom: 1px solid #e8e8e8; }
+        .data-preview th { background: #f5f5f5; font-weight: 600; position: sticky; top: 0; }
+        .data-preview tr:hover { background: #fafafa; }
+    </style>
+</head>
+<body>
+    <!-- 整体布局 -->
+    <div class="app-layout">
+        <!-- 左侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <h1>AlphaForge</h1>
+                <p>AI 驱动量化因子挖掘</p>
+            </div>
+
+            <div class="sidebar-nav">
+                <div class="sidebar-nav-title">功能菜单</div>
+                <div class="sidebar-nav-item active" data-page="factor-lab">
+                    <span class="icon">🔬</span>因子实验室
+                </div>
+                <div class="sidebar-nav-item" data-page="factor-lib">
+                    <span class="icon">📚</span>因子库
+                    <span class="badge">12</span>
+                </div>
+                <div class="sidebar-nav-item" data-page="history">
+                    <span class="icon">📊</span>历史记录
+                </div>
+
+                <div class="sidebar-nav-title" style="margin-top: 16px;">系统</div>
+                <div class="sidebar-nav-item" data-page="settings">
+                    <span class="icon">⚙️</span>设置
+                </div>
+                <div class="sidebar-nav-item" data-page="help">
+                    <span class="icon">❓</span>帮助中心
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="sidebar-avatar">U</div>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name">用户</div>
+                        <div class="sidebar-user-role">免费版</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <div class="main-header">
+                <div class="main-title" id="page-title">因子实验室</div>
+                <div class="main-actions">
+                    <button class="btn btn-sm">🔔 通知</button>
+                    <button class="btn btn-sm">❓ 帮助</button>
+                </div>
+            </div>
+
+            <div class="container">
+                <!-- 步骤条 -->
+                <div class="step-container">
+                    <div class="step-bar">
+                        <div class="step-item active" data-step="0">
+                            <div class="step-circle">1</div>
+                    <span class="step-label">假设生成</span>
+                </div>
+                <div class="step-item" data-step="1">
+                    <div class="step-circle">2</div>
+                    <span class="step-label">代码生成</span>
+                </div>
+                <div class="step-item" data-step="2">
+                    <div class="step-circle">3</div>
+                    <span class="step-label">数据准备</span>
+                </div>
+                <div class="step-item" data-step="3">
+                    <div class="step-circle">4</div>
+                    <span class="step-label">回测验证</span>
+                </div>
+                <div class="step-item" data-step="4">
+                    <div class="step-circle">5</div>
+                    <span class="step-label">因子优化</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 步骤1: 假设生成 -->
+        <div class="step-content" id="step-0">
+            <div class="card">
+                <div class="card-title">💬 智能假设生成器</div>
+                <p style="color: #666; margin-bottom: 16px;">通过与 AI 对话，逐步明确你的因子想法</p>
+
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="message ai">
+                            <div class="avatar ai">AI</div>
+                            <div class="message-content">
+                                <div class="message-bubble">
+                                    你好！我是 AlphaForge 的因子分析师。<br><br>
+                                    请告诉我你观察到的<strong>市场规律</strong>或<strong>交易想法</strong>，比如：<br>
+                                    • "当国债收益率曲线变得平坦时..."<br>
+                                    • "某品种成交量突然放大后..."<br><br>
+                                    越详细的描述，能生成越精准的因子假设！
+                                </div>
+                                <div class="message-time">AlphaForge</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quick-prompts" id="quick-prompts">
+                        <button class="quick-prompt" data-prompt="当国债期货价格连续上涨超过10天后，后续下跌的概率会增加">📈 连续上涨后下跌</button>
+                        <button class="quick-prompt" data-prompt="国债收益率曲线变得平坦时，预示经济即将下行">📉 曲线平坦化</button>
+                        <button class="quick-prompt" data-prompt="波动率急剧放大后，价格往往会快速反弹">⚡ 波动率反弹</button>
+                    </div>
+
+                    <div class="chat-input-area">
+                        <input type="text" class="chat-input" id="chat-input" placeholder="描述你的市场想法...">
+                        <button class="send-btn" id="send-btn">➤</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card hidden" id="hypothesis-confirm">
+                <div class="card-title">✅ 生成的假设候选</div>
+                <div id="hypothesis-list"></div>
+                <div class="confirm-box">
+                    <p style="margin-bottom: 12px;">选择满意的假设后，点击确认继续</p>
+                    <button class="btn btn-primary btn-lg" id="confirm-hypothesis" disabled>确认并生成代码 →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 步骤2: 代码生成 -->
+        <div class="step-content hidden" id="step-1">
+            <div class="card">
+                <div class="card-title">📄 生成因子代码</div>
+
+                <!-- 加载状态 -->
+                <div id="code-loading" class="loading">
+                    <div class="spinner"></div>
+                    <span>LLM 正在生成代码...</span>
+                </div>
+
+                <!-- 代码编辑区 -->
+                <div id="code-result" class="hidden">
+                    <div class="code-editor-container">
+                        <div class="code-toolbar">
+                            <div class="code-toolbar-left">
+                                <div class="code-filename">
+                                    <span>📄</span>
+                                    <span>CurveSlopeFactor.py</span>
+                                </div>
+                                <div class="code-status">
+                                    <span class="status-dot success"></span>
+                                    <span>已验证通过</span>
+                                </div>
+                            </div>
+                            <div style="font-size: 12px; color: #999;">
+                                可编辑
+                            </div>
+                        </div>
+                        <textarea class="code-editor" id="code-editor">class CurveSlopeFactor:
+    """曲线平坦度因子 - 由AI生成"""
+
+    def __init__(self, params=None):
+        self.params = params or {
+            'window_short': 10,
+            'window_long': 30
+        }
+
+    def calculate(self, data):
+        short_ma = data['close'].rolling(
+            self.params['window_short']).mean()
+        long_ma = data['close'].rolling(
+            self.params['window_long']).mean()
+        slope = (short_ma - long_ma) / long_ma
+        return -slope  # 负相关</textarea>
+                    </div>
+
+                    <!-- 代码对话区 -->
+                    <div id="code-chat" class="code-chat-container hidden">
+                        <!-- 对话消息会动态添加 -->
+                    </div>
+
+                    <div class="code-actions">
+                        <button class="btn btn-sm" id="btn-validate">
+                            ✅ 验证代码
+                        </button>
+                        <button class="btn btn-sm" id="btn-suggest">
+                            💬 提出修改
+                        </button>
+                        <button class="btn btn-sm">
+                            📋 复制代码
+                        </button>
+                        <button class="btn btn-sm">
+                            💾 下载
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-success" id="run-result">
+                <span>✅</span>
+                <div>
+                    <strong>试运行通过</strong>
+                    <p style="margin: 4px 0 0 0; font-size: 13px;">因子在样本数据上正常运行，因子值范围: -0.15 ~ 0.12</p>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn" id="back-to-0">← 返回</button>
+                <button class="btn btn-primary" id="to-step-2">下一步: 准备数据 →</button>
+            </div>
+        </div>
+
+        <!-- 步骤3: 数据准备 -->
+        <div class="step-content hidden" id="step-2">
+            <!-- 数据源选项卡 -->
+            <div class="toggle-tabs">
+                <button class="toggle-tab active" data-tab="sample">📦 样本数据</button>
+                <button class="toggle-tab" data-tab="code">💻 代码获取</button>
+                <button class="toggle-tab" data-tab="upload">📁 导入文件</button>
+            </div>
+
+            <!-- 样本数据模式 -->
+            <div class="data-tab" id="tab-sample">
+                <div class="card">
+                    <div class="card-title">📦 样本数据</div>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; align-items: flex-start; gap: 8px; padding: 16px; border: 1px solid #e8e8e8; border-radius: 8px; background: #e6f7ff; cursor: pointer;">
+                            <input type="radio" checked style="margin-top: 4px;">
+                            <div>
+                                <strong>国债期货 T.CHT</strong>
+                                <p style="font-size: 12px; color: #666; margin: 4px 0;">2020-2024 日线数据 | 1,217 个交易日</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; gap: 8px; padding: 16px; border: 1px solid #e8e8e8; border-radius: 8px; cursor: pointer;">
+                            <input type="radio" style="margin-top: 4px;">
+                            <div>
+                                <strong>国债期货 TF.CHT</strong>
+                                <p style="font-size: 12px; color: #666; margin: 4px 0;">2020-2024 日线数据 | 1,217 个交易日</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="load-sample" style="margin-top: 16px;">加载样本数据</button>
+                </div>
+            </div>
+
+            <!-- 代码获取数据模式 -->
+            <div class="data-tab hidden" id="tab-code">
+                <div class="card">
+                    <div class="card-title">💻 通过代码获取数据</div>
+                    <p style="color: #666; margin-bottom: 16px;">编写 Python 代码从数据库/API 获取数据，返回 DataFrame</p>
+
+                    <div class="code-editor-container">
+                        <div class="code-toolbar">
+                            <div class="code-toolbar-left">
+                                <div class="code-filename">
+                                    <span>📄</span>
+                                    <span>data_loader.py</span>
+                                </div>
+                                <div class="code-status" id="data-code-status">
+                                    <span class="status-dot warning"></span>
+                                    <span>待运行</span>
+                                </div>
+                            </div>
+                        </div>
+                        <textarea class="code-editor" id="data-code-editor" style="min-height: 220px;">import pandas as pd
+
+# 数据库连接配置
+DB_CONFIG = {
+    'host': 'localhost',
+    'port': 3306,
+    'user': 'root',
+    'password': 'your_password',
+    'database': ' futures_data'
+}
+
+def load_data() -> pd.DataFrame:
+    """
+    从数据库加载数据
+    返回包含以下列的 DataFrame:
+    - date: 日期
+    - open/high/low/close:  OHLC价格
+    - volume: 成交量
+    - return: 收益率
+    """
+    query = """
+        SELECT
+            trade_date as date,
+            open, high, low, close,
+            volume,
+            pct_change as `return`
+        FROM futures_daily
+        WHERE symbol = 'T.CHT'
+          AND trade_date BETWEEN '2020-01-01' AND '2024-12-31'
+        ORDER BY trade_date
+    """
+
+    # 方法1: 使用 SQLAlchemy
+    # from sqlalchemy import create_engine
+    # engine = create_engine(f"mysql+pymysql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}")
+    # df = pd.read_sql(query, engine)
+
+    # 方法2: 使用 pymysql
+    # import pymysql
+    # conn = pymysql.connect(**DB_CONFIG)
+    # df = pd.read_sql(query, conn)
+    # conn.close()
+
+    # 示例：使用模拟数据
+    dates = pd.date_range('2020-01-01', '2024-12-31', freq='B')
+    df = pd.DataFrame({
+        'date': dates,
+        'open': 100 + np.random.randn(len(dates)).cumsum(),
+        'high': 102 + np.random.randn(len(dates)).cumsum(),
+        'low': 98 + np.random.randn(len(dates)).cumsum(),
+        'close': 100 + np.random.randn(len(dates)).cumsum(),
+        'volume': np.random.randint(10000, 100000, len(dates)),
+        'return': np.random.randn(len(dates)) * 0.01
+    })
+
+    return df
+
+if __name__ == '__main__':
+    data = load_data()
+    print(f"加载数据: {len(data)} 条")
+    print(data.head())</textarea>
+                    </div>
+
+                    <!-- 代码操作按钮 -->
+                    <div class="code-actions">
+                        <button class="btn btn-primary" id="run-data-code">▶️ 运行代码</button>
+                        <button class="btn btn-secondary" id="btn-ask-llm">
+                            🤖 让 AI 生成代码
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 导入文件模式 -->
+            <div class="data-tab hidden" id="tab-upload">
+                <div class="card">
+                    <div class="card-title">📁 导入数据文件</div>
+                    <div style="border: 2px dashed #d9d9d9; border-radius: 12px; padding: 40px; text-align: center; background: #fafafa;">
+                        <p style="font-size: 32px; margin-bottom: 12px;">📂</p>
+                        <p style="color: #666;">拖拽文件到此处或点击上传</p>
+                        <p style="font-size: 12px; color: #999; margin-top: 8px;">支持 CSV, Excel (.xlsx, .xls) 格式</p>
+                        <button class="btn btn-primary" style="margin-top: 16px;">选择文件</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="data-overview">
+                <div class="card-title">📈 数据概览</div>
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">1,217</div>
+                        <div class="metric-label">数据点数</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">5年</div>
+                        <div class="metric-label">时间跨度</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">100.15</div>
+                        <div class="metric-label">最低价</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">108.92</div>
+                        <div class="metric-label">最高价</div>
+                    </div>
+                </div>
+
+                <div class="data-preview">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>date</th>
+                                <th>open</th>
+                                <th>high</th>
+                                <th>low</th>
+                                <th>close</th>
+                                <th>volume</th>
+                                <th>return</th>
+                            </tr>
+                        </thead>
+                        <tbody id="preview-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn" id="back-to-1">← 返回</button>
+                <button class="btn btn-primary" id="to-step-3">下一步: 回测验证 →</button>
+            </div>
+        </div>
+
+        <!-- 步骤4: 回测验证 -->
+        <div class="step-content hidden" id="step-3">
+            <div class="card">
+                <div class="card-title">⚙️ 回测配置</div>
+                <div class="desc-row">
+                    <div class="desc-item"><span class="desc-label">因子:</span><span class="desc-value">CurveSlopeFactor</span></div>
+                    <div class="desc-item"><span class="desc-label">参数:</span><span class="desc-value">window_short=10, window_long=30</span></div>
+                    <div class="desc-item"><span class="desc-label">分组:</span><span class="desc-value">5组</span></div>
+                    <div class="desc-item"><span class="desc-label">手续费:</span><span class="desc-value">0.0003</span></div>
+                </div>
+                <button class="btn btn-primary btn-lg" id="run-backtest" style="margin-top: 16px;">🚀 开始回测</button>
+            </div>
+
+            <div class="card hidden" id="backtest-result">
+                <div class="metric-grid">
+                    <div class="metric-card warning">
+                        <div class="metric-value">0.018</div>
+                        <div class="metric-label">IC均值 ⚠️</div>
+                    </div>
+                    <div class="metric-card warning">
+                        <div class="metric-value">0.24</div>
+                        <div class="metric-label">IR ⚠️</div>
+                    </div>
+                    <div class="metric-card success">
+                        <div class="metric-value">10.2%</div>
+                        <div class="metric-label">年化收益</div>
+                    </div>
+                    <div class="metric-card success">
+                        <div class="metric-value">-3.8%</div>
+                        <div class="metric-label">最大回撤</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div id="ic-chart" class="chart-box"></div>
+                </div>
+
+                <div class="alert alert-error">
+                    <span>❌</span>
+                    <div>
+                        <strong>未通过检验</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 13px;">需要优化参数或重新生成假设</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-buttons" id="backtest-nav">
+                <button class="btn" id="back-to-2">← 返回</button>
+                <button class="btn btn-primary" id="to-step-4">下一步: 因子优化 →</button>
+            </div>
+        </div>
+
+        <!-- 步骤5: 因子优化 -->
+        <div class="step-content hidden" id="step-4">
+            <div class="card">
+                <div class="card-title">🔍 AI 诊断结果</div>
+                <div class="alert alert-warning">
+                    <span>⚠️</span>
+                    <div>
+                        <strong>因子未通过检验</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 13px;">• IC均值偏低 (0.018 &lt; 0.02)<br>• IR不稳定 (0.24 &lt; 0.3)<br>• 建议增大窗口参数提高稳定性</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">⚙️ 参数搜索配置</div>
+                <div style="margin-bottom: 12px;">
+                    <span>window_short: </span>
+                    <span class="tag tag-blue">10</span>
+                    <span class="tag tag-blue">15</span>
+                    <span class="tag tag-blue">20</span>
+                    <span class="tag tag-blue">25</span>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <span>window_long: </span>
+                    <span class="tag tag-blue">20</span>
+                    <span class="tag tag-blue">30</span>
+                    <span class="tag tag-blue">40</span>
+                    <span class="tag tag-blue">50</span>
+                    <span class="tag tag-blue">60</span>
+                </div>
+                <div>
+                    <span>优化目标: </span>
+                    <label><input type="radio" name="target" value="ir" checked> IR (信息比率)</label>
+                    <label style="margin-left: 16px;"><input type="radio" name="target" value="ic"> IC均值</label>
+                </div>
+                <button class="btn btn-primary btn-lg" id="start-optimize" style="margin-top: 20px;">🚀 开始优化 (20种组合)</button>
+            </div>
+
+            <div class="card hidden" id="optimize-progress">
+                <div class="progress-wrap">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <p style="text-align: center; color: #666;">当前最佳: window_short=20, window_long=40 | IR=0.42</p>
+            </div>
+
+            <div class="card hidden" id="optimize-result">
+                <div class="card-title">
+                    🏆 最优参数
+                    <span class="tag tag-gold">IR = 0.42</span>
+                </div>
+                <div class="desc-row">
+                    <div class="desc-item"><span class="desc-label">window_short:</span><span class="desc-value">20</span></div>
+                    <div class="desc-item"><span class="desc-label">window_long:</span><span class="desc-value">40</span></div>
+                </div>
+            </div>
+
+            <div class="card hidden" id="heatmap-card">
+                <div class="card-title">📊 IR 热力图</div>
+                <div class="heatmap" id="heatmap"></div>
+            </div>
+
+            <div class="card hidden" id="comparison-card">
+                <div class="card-title">📈 优化前后对比</div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>指标</th>
+                            <th>优化前</th>
+                            <th>优化后</th>
+                            <th>变化</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>IC均值</td>
+                            <td>0.018</td>
+                            <td>0.028</td>
+                            <td style="color: #52c41a;">+55.6%</td>
+                            <td><span class="tag tag-green">通过</span></td>
+                        </tr>
+                        <tr>
+                            <td>IR</td>
+                            <td>0.24</td>
+                            <td>0.42</td>
+                            <td style="color: #52c41a;">+75.0%</td>
+                            <td><span class="tag tag-green">通过</span></td>
+                        </tr>
+                        <tr>
+                            <td>年化收益</td>
+                            <td>10.2%</td>
+                            <td>15.8%</td>
+                            <td style="color: #52c41a;">+54.9%</td>
+                            <td><span class="tag tag-green">通过</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn" id="back-to-3">← 返回回测</button>
+                <div>
+                    <button class="btn" style="margin-right: 8px;">🔄 继续优化</button>
+                    <button class="btn btn-primary">💾 保存因子</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改建议对话框 -->
+    <div class="modal-overlay hidden" id="suggestion-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">💬 提出代码修改意见</span>
+                <button class="modal-close" id="close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 12px; color: #666;">描述你对代码的修改要求：</p>
+                <textarea class="suggestion-input" id="suggestion-input" placeholder="例如：
+• 将窗口参数改为 20 和 60
+• 添加止损逻辑
+• 增加平滑处理
+• 修改为做多逻辑"></textarea>
+
+                <div class="suggestion-examples">
+                    <div class="suggestion-examples-title">快速建议（点击使用）：</div>
+                    <span class="suggestion-example" data="将 window_short 改为 15">改 window_short=15</span>
+                    <span class="suggestion-example" data="将 window_long 改为 60">改 window_long=60</span>
+                    <span class="suggestion-example" data="添加 5 日平滑处理">添加平滑</span>
+                    <span class="suggestion-example" data="修改为正相关（做多逻辑）">改为做多</span>
+                    <span class="suggestion-example" data="增加止损逻辑，跌破 2% 时止损">添加止损</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-suggestion">取消</button>
+                <button class="btn btn-primary" id="submit-suggestion">提交修改 →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LLM 数据代码生成对话框 -->
+    <div class="modal-overlay hidden" id="llm-data-modal">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <span class="modal-title">🤖 AI 生成数据获取代码</span>
+                <button class="modal-close" id="close-llm-modal">×</button>
+            </div>
+            <div class="modal-body" style="max-height: 500px;">
+                <div style="display: flex; flex-direction: column; gap: 12px; height: 100%;">
+                    <!-- 对话区 -->
+                    <div id="llm-data-chat" style="flex: 1; min-height: 200px; max-height: 250px; overflow-y: auto; padding: 12px; background: #fafafa; border-radius: 8px; margin-bottom: 12px;">
+                        <div class="data-chat-msg">
+                            <div class="data-chat-role ai">AI 助手</div>
+                            <div class="data-chat-content">
+                                你好！请告诉我你需要的数据来源，我可以帮你生成代码。<br><br>
+                                例如：<br>
+                                • "从 MySQL 获取国债期货数据"<br>
+                                • "连接 PostgreSQL 读取行情数据"<br>
+                                • "从 API 获取实时数据"
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 输入区 -->
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="llm-data-input" class="chat-input" style="flex: 1; border-radius: 8px;" placeholder="描述你的数据来源需求...">
+                        <button class="btn btn-primary" id="llm-data-send" style="padding: 8px 16px;">发送</button>
+                    </div>
+
+                    <!-- 快速提示 -->
+                    <div class="quick-prompts" style="margin-top: 8px;">
+                        <button class="quick-prompt" data-dsrc="MySQL 国债期货T.CHT 2020-2024年">MySQL 国债期货</button>
+                        <button class="quick-prompt" data-dsrc="PostgreSQL 期货行情数据">PostgreSQL 行情</button>
+                        <button class="quick-prompt" data-dsrc="SQLite 本地数据库读取">SQLite 本地</button>
+                        <button class="quick-prompt" data-dsrc="REST API 获取数据">REST API</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+    <script>
+        // ==================== 状态 ====================
+        let currentStep = 0;
+        let selectedHypothesis = null;
+        let icChart = null;
+        let step = 0;
+        let codeModified = false;
+
+        // 假设候选
+        const hypothesisCandidates = [
+            { id: 'h1', name: '曲线平坦度因子', logic: '计算 10日-30日移动平均斜率，斜率变平时做空', data_req: ['close_10d', 'close_30d'], direction: '负相关', confidence: 85 },
+            { id: 'h2', name: '期限利差因子', logic: '短期-长期利差扩大时做空', data_req: ['short_rate', 'long_rate'], direction: '负相关', confidence: 78 },
+            { id: 'h3', name: '波动率反转因子', logic: '波动率急剧上升后反转做多', data_req: ['volatility', 'volume'], direction: '正相关', confidence: 72 },
+        ];
+
+        // ==================== 聊天功能 ====================
+        function addMessage(content, isAI = true) {
+            const messages = document.getElementById('chat-messages');
+            const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isAI ? 'ai' : 'user'}`;
+            messageDiv.innerHTML = `
+                <div class="avatar ${isAI ? 'ai' : 'user'}">${isAI ? 'AI' : '你'}</div>
+                <div class="message-content">
+                    <div class="message-bubble">${content}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function addLoading() {
+            const messages = document.getElementById('chat-messages');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message ai';
+            loadingDiv.id = 'loading-msg';
+            loadingDiv.innerHTML = `
+                <div class="avatar ai">AI</div>
+                <div class="message-content">
+                    <div class="loading" style="padding: 8px 16px;">
+                        <div class="spinner"></div>
+                        <span>AI 思考中...</span>
+                    </div>
+                </div>
+            `;
+            messages.appendChild(loadingDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function removeLoading() {
+            const loading = document.getElementById('loading-msg');
+            if (loading) loading.remove();
+        }
+
+        function handleUserMessage(text) {
+            addMessage(text, false);
+            addLoading();
+
+            setTimeout(() => {
+                removeLoading();
+
+                if (step === 0) {
+                    addMessage("收到！我来帮你分析这个想法。你希望这个因子主要预测价格方向还是收益幅度？");
+                    step = 1;
+                } else if (step === 1) {
+                    addMessage("理解了。关于时间周期，你偏好短期(1-5天)、中期(10-30天)还是长期(60天以上)？");
+                    step = 2;
+                } else if (step === 2) {
+                    addMessage("好的。根据你的描述，我生成了以下假设候选：");
+                    showHypothesisCandidates();
+                    step = 0;
+                } else if (step >= 3) {
+                    addMessage("收到调整意见，让我重新生成假设...");
+                    showHypothesisCandidates();
+                }
+            }, 600 + Math.random() * 600);
+        }
+
+        function showHypothesisCandidates() {
+            const list = document.getElementById('hypothesis-list');
+            list.innerHTML = hypothesisCandidates.map(h => `
+                <div class="hypothesis-candidate" data-id="${h.id}">
+                    <div class="hypothesis-header">
+                        <span class="hypothesis-name">${h.name}</span>
+                        <span class="confidence-badge">⭐ ${h.confidence}%</span>
+                    </div>
+                    <p style="color: #666; font-size: 13px; margin: 8px 0;">${h.logic}</p>
+                    <p style="font-size: 12px; color: #999;">📁 ${h.data_req.join(', ')} | 🎯 ${h.direction}</p>
+                </div>
+            `).join('');
+
+            list.querySelectorAll('.hypothesis-candidate').forEach(card => {
+                card.addEventListener('click', function() {
+                    list.querySelectorAll('.hypothesis-candidate').forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedHypothesis = this.dataset.id;
+                    document.getElementById('confirm-hypothesis').disabled = false;
+                });
+            });
+
+            document.getElementById('hypothesis-confirm').classList.remove('hidden');
+        }
+
+        // 事件绑定
+        document.getElementById('send-btn').addEventListener('click', function() {
+            const input = document.getElementById('chat-input');
+            if (input.value.trim()) {
+                handleUserMessage(input.value.trim());
+                input.value = '';
+            }
+        });
+
+        document.getElementById('chat-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                handleUserMessage(this.value.trim());
+                this.value = '';
+            }
+        });
+
+        document.querySelectorAll('.quick-prompt').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('chat-input').value = this.dataset.prompt;
+                handleUserMessage(this.dataset.prompt);
+            });
+        });
+
+        document.getElementById('confirm-hypothesis').addEventListener('click', function() {
+            document.getElementById('code-loading').classList.remove('hidden');
+            document.getElementById('code-result').classList.add('hidden');
+
+            setTimeout(() => {
+                document.getElementById('code-loading').classList.add('hidden');
+                document.getElementById('code-result').classList.remove('hidden');
+            }, 2000);
+
+            goToStep(1);
+        });
+
+        // ==================== 代码编辑功能 ====================
+        const codeEditor = document.getElementById('code-editor');
+        const originalCode = codeEditor.value;
+
+        // 监听代码修改
+        codeEditor.addEventListener('input', function() {
+            const currentStatus = document.querySelector('.code-status');
+            if (this.value !== originalCode) {
+                codeModified = true;
+                currentStatus.innerHTML = `
+                    <span class="status-dot warning"></span>
+                    <span>已修改（未验证）</span>
+                `;
+            } else {
+                codeModified = false;
+                currentStatus.innerHTML = `
+                    <span class="status-dot success"></span>
+                    <span>已验证通过</span>
+                `;
+            }
+        });
+
+        // 验证代码按钮
+        document.getElementById('btn-validate').addEventListener('click', function() {
+            this.disabled = true;
+            this.textContent = '验证中...';
+
+            setTimeout(() => {
+                this.disabled = false;
+                this.textContent = '✅ 验证代码';
+
+                const currentStatus = document.querySelector('.code-status');
+                currentStatus.innerHTML = `
+                    <span class="status-dot success"></span>
+                    <span>验证通过</span>
+                `;
+
+                // 显示成功提示
+                const resultDiv = document.getElementById('run-result');
+                resultDiv.classList.remove('hidden');
+                resultDiv.className = 'alert alert-success';
+                resultDiv.innerHTML = `
+                    <span>✅</span>
+                    <div>
+                        <strong>代码验证通过</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 13px;">代码语法正确，可在样本数据上正常运行</p>
+                    </div>
+                `;
+            }, 1500);
+        });
+
+        // ==================== 修改建议对话框 ====================
+        const modal = document.getElementById('suggestion-modal');
+        const suggestionInput = document.getElementById('suggestion-input');
+
+        // 打开对话框
+        document.getElementById('btn-suggest').addEventListener('click', function() {
+            modal.classList.remove('hidden');
+            suggestionInput.focus();
+        });
+
+        // 关闭对话框
+        function closeModal() {
+            modal.classList.add('hidden');
+            suggestionInput.value = '';
+        }
+
+        document.getElementById('close-modal').addEventListener('click', closeModal);
+        document.getElementById('cancel-suggestion').addEventListener('click', closeModal);
+
+        // 点击遮罩关闭
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeModal();
+        });
+
+        // 快速建议点击
+        document.querySelectorAll('.suggestion-example').forEach(btn => {
+            btn.addEventListener('click', function() {
+                suggestionInput.value = this.dataset;
+            });
+        });
+
+        // 提交修改建议
+        document.getElementById('submit-suggestion').addEventListener('click', function() {
+            const suggestion = suggestionInput.value.trim();
+            if (!suggestion) {
+                alert('请输入修改意见');
+                return;
+            }
+
+            closeModal();
+
+            // 显示代码对话
+            const codeChat = document.getElementById('code-chat');
+            codeChat.classList.remove('hidden');
+
+            // 添加用户消息
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'code-chat-msg';
+            msgDiv.innerHTML = `
+                <div class="code-chat-role user">你</div>
+                <div class="code-chat-content">${suggestion}</div>
+            `;
+            codeChat.appendChild(msgDiv);
+
+            // 显示 AI 响应（模拟）
+            const aiDiv = document.createElement('div');
+            aiDiv.className = 'code-chat-msg';
+            aiDiv.innerHTML = `
+                <div class="code-chat-role ai">AI</div>
+                <div class="code-chat-content">
+                    <div class="loading" style="padding: 8px 0;">
+                        <div class="spinner"></div>
+                        <span>正在根据你的建议修改代码...</span>
+                    </div>
+                </div>
+            `;
+            codeChat.appendChild(aiDiv);
+            codeChat.scrollTop = codeChat.scrollHeight;
+
+            // 模拟 AI 修改代码
+            setTimeout(() => {
+                // 根据建议修改代码
+                let newCode = originalCode;
+
+                if (suggestion.includes('window_short') && suggestion.includes('15')) {
+                    newCode = newCode.replace("'window_short': 10", "'window_short': 15");
+                }
+                if (suggestion.includes('window_long') && suggestion.includes('60')) {
+                    newCode = newCode.replace("'window_long': 30", "'window_long': 60");
+                }
+                if (suggestion.includes('平滑')) {
+                    newCode = newCode.replace(
+                        'return -slope  # 负相关',
+                        'return -slope.rolling(5).mean()  # 负相关 + 5日平滑'
+                    );
+                }
+                if (suggestion.includes('做多') || suggestion.includes('正相关')) {
+                    newCode = newCode.replace('return -slope', 'return slope');
+                    newCode = newCode.replace('# 负相关 + 5日平滑', '# 改为正相关（做多）\n        # 负相关 + 5日平滑');
+                }
+
+                // 更新代码编辑器
+                codeEditor.value = newCode;
+
+                // 更新状态
+                const currentStatus = document.querySelector('.code-status');
+                currentStatus.innerHTML = `
+                    <span class="status-dot warning"></span>
+                    <span>已修改（待验证）</span>
+                `;
+
+                // 更新 AI 消息
+                aiDiv.innerHTML = `
+                    <div class="code-chat-role ai">AI</div>
+                    <div class="code-chat-content" style="background: #f6ffed; border-color: #b7eb8f; color: #52c41a;">
+                        ✅ 已根据你的建议修改代码！请点击"验证代码"确认无误后继续。
+                    </div>
+                `;
+
+                codeChat.scrollTop = codeChat.scrollHeight;
+            }, 1500);
+        });
+
+        // ==================== 步骤切换 ====================
+        function goToStep(step) {
+            currentStep = step;
+
+            document.querySelectorAll('.step-item').forEach((item, i) => {
+                item.classList.remove('active', 'finish');
+                if (i < step) item.classList.add('finish');
+                if (i === step) item.classList.add('active');
+            });
+
+            document.querySelectorAll('.step-content').forEach((content, i) => {
+                content.classList.toggle('hidden', i !== step);
+            });
+        }
+
+        // 点击步骤条快速跳转
+        document.querySelectorAll('.step-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const targetStep = parseInt(this.dataset.step);
+                // 可以跳转到已完成的步骤，或下一步
+                if (targetStep <= currentStep + 1) {
+                    goToStep(targetStep);
+                }
+            });
+        });
+
+        // 导航
+        document.getElementById('back-to-0').addEventListener('click', () => goToStep(0));
+        document.getElementById('to-step-2').addEventListener('click', () => goToStep(2));
+        document.getElementById('back-to-1').addEventListener('click', () => goToStep(1));
+        document.getElementById('to-step-3').addEventListener('click', () => goToStep(3));
+        document.getElementById('back-to-2').addEventListener('click', () => goToStep(2));
+
+        // 样本数据加载
+        document.getElementById('load-sample').addEventListener('click', function() {
+            this.textContent = '加载中...';
+            this.disabled = true;
+            setTimeout(() => {
+                document.getElementById('data-overview').classList.remove('hidden');
+                this.textContent = '加载样本数据';
+                this.disabled = false;
+                generateDataPreview();
+            }, 1000);
+        });
+
+        // ==================== 数据源切换 ====================
+        document.querySelectorAll('.toggle-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.toggle-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                document.querySelectorAll('.data-tab').forEach(t => t.classList.add('hidden'));
+                document.getElementById('tab-' + this.dataset.tab).classList.remove('hidden');
+
+                // 隐藏数据概览，重新加载后显示
+                document.getElementById('data-overview').classList.add('hidden');
+            });
+        });
+
+        // ==================== 代码获取数据 ====================
+        document.getElementById('run-data-code').addEventListener('click', function() {
+            this.textContent = '运行中...';
+            this.disabled = true;
+
+            // 显示加载状态
+            const status = document.getElementById('data-code-status');
+            status.innerHTML = '<span class="status-dot" style="background:#faad14;animation:spin 1s linear infinite;"></span><span>正在运行...</span>';
+
+            setTimeout(() => {
+                this.textContent = '▶️ 运行代码';
+                this.disabled = false;
+                status.innerHTML = '<span class="status-dot success"></span><span>运行成功</span>';
+
+                // 显示数据概览
+                document.getElementById('data-overview').classList.remove('hidden');
+                generateDataPreview();
+
+                // 显示成功提示
+                const dataConfig = document.getElementById('data-config');
+                const existingAlert = dataConfig.querySelector('.alert');
+                if (existingAlert) existingAlert.remove();
+
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success';
+                alertDiv.innerHTML = '<span>✅</span><div><strong>数据加载成功</strong><p style="margin:4px 0 0 0;font-size:13px;">通过代码成功获取 1,217 条数据</p></div>';
+                dataConfig.insertBefore(alertDiv, dataConfig.firstChild);
+            }, 2000);
+        });
+
+        // ==================== LLM 数据代码生成 ====================
+        const llmDataModal = document.getElementById('llm-data-modal');
+        const llmDataInput = document.getElementById('llm-data-input');
+        const llmDataChat = document.getElementById('llm-data-chat');
+
+        // 打开 LLM 对话框
+        document.getElementById('btn-ask-llm').addEventListener('click', () => {
+            llmDataModal.classList.remove('hidden');
+            llmDataInput.focus();
+        });
+
+        // 关闭对话框
+        document.getElementById('close-llm-modal').addEventListener('click', () => {
+            llmDataModal.classList.add('hidden');
+        });
+        llmDataModal.addEventListener('click', e => {
+            if (e.target === llmDataModal) llmDataModal.classList.add('hidden');
+        });
+
+        // 发送消息
+        function handleLLMDataRequest(text) {
+            const userMsg = document.createElement('div');
+            userMsg.className = 'data-chat-msg';
+            userMsg.innerHTML = `<div class="data-chat-role user">你</div><div class="data-chat-content">${text}</div>`;
+            llmDataChat.appendChild(userMsg);
+            llmDataChat.scrollTop = llmDataChat.scrollHeight;
+
+            setTimeout(() => {
+                let codeTemplate = '';
+                if (text.toLowerCase().includes('mysql')) {
+                    codeTemplate = `import pandas as pd
+import pymysql
+
+def load_data():
+    conn = pymysql.connect(
+        host='localhost', port=3306,
+        user='root', password='xxx',
+        database='futures_data'
+    )
+    query = """SELECT trade_date, open, high, low, close, volume
+               FROM futures_daily
+               WHERE symbol = 'T.CHT' AND trade_date >= '2020-01-01'"""
+    df = pd.read_sql(query, conn)
+    conn.close()
+    return df`;
+                } else if (text.toLowerCase().includes('postgresql')) {
+                    codeTemplate = `import pandas as pd
+import psycopg2
+
+def load_data():
+    conn = psycopg2.connect(host='localhost', port=5432,
+                           user='postgres', password='xxx', database='futures')
+    df = pd.read_sql("SELECT * FROM futures_daily", conn)
+    conn.close()
+    return df`;
+                } else if (text.toLowerCase().includes('sqlite')) {
+                    codeTemplate = `import pandas as pd
+import sqlite3
+
+def load_data():
+    conn = sqlite3.connect('futures.db')
+    df = pd.read_sql_query("SELECT * FROM futures_daily", conn)
+    conn.close()
+    return df`;
+                } else if (text.toLowerCase().includes('api')) {
+                    codeTemplate = `import pandas as pd
+import requests
+
+def load_data():
+    url = 'https://api.example.com/v1/futures'
+    params = {'symbol': 'T.CHT', 'from': '2020-01-01', 'to': '2024-12-31'}
+    resp = requests.get(url, params=params)
+    return pd.DataFrame(resp.json()['data'])`;
+                } else {
+                    codeTemplate = `import pandas as pd
+
+def load_data():
+    # TODO: 根据你的数据源修改连接方式
+    # 支持: MySQL, PostgreSQL, SQLite, API, CSV, Excel 等
+
+    # 示例: 返回模拟数据
+    dates = pd.date_range('2020-01-01', '2024-12-31', freq='B')
+    return pd.DataFrame({'date': dates, 'close': 100})`;
+                }
+
+                const aiMsg = document.createElement('div');
+                aiMsg.className = 'data-chat-msg';
+                aiMsg.innerHTML = `<div class="data-chat-role ai">AI</div><div class="data-chat-content">根据你的需求，生成代码如下：<pre style="background:#1e1e1e;color:#d4d4d4;padding:8px;border-radius:4px;margin-top:8px;font-size:11px;overflow-x:auto;white-space:pre;">${codeTemplate}</pre><button class="btn btn-sm btn-primary" style="margin-top:8px;" onclick="document.getElementById('data-code-editor').value=this.previousElementSibling.textContent;document.getElementById('llm-data-modal').classList.add('hidden');">应用到代码编辑器</button></div>`;
+                llmDataChat.appendChild(aiMsg);
+                llmDataChat.scrollTop = llmDataChat.scrollHeight;
+            }, 600);
+        }
+
+        document.getElementById('llm-data-send').addEventListener('click', () => {
+            const text = llmDataInput.value.trim();
+            if (text) { handleLLMDataRequest(text); llmDataInput.value = ''; }
+        });
+        llmDataInput.addEventListener('keypress', e => { if (e.key === 'Enter') { const t = llmDataInput.value.trim(); if (t) { handleLLMDataRequest(t); llmDataInput.value = ''; } } });
+        document.querySelectorAll('#llm-data-modal .quick-prompt').forEach(btn => btn.addEventListener('click', function() { llmDataInput.value = this.dataset.dsrc; handleLLMDataRequest(this.dataset.dsrc); }));
+
+        // 生成数据预览
+        function generateDataPreview() {
+            const tbody = document.getElementById('preview-body');
+            if (!tbody) return;
+
+            let html = '';
+            const basePrice = 105;
+            for (let i = 0; i < 10; i++) {
+                const date = `2024-${String(Math.floor(i/4)+1).padStart(2,'0')}-${String((i%4)*7+1).padStart(2,'0')}`;
+                const open = (basePrice + Math.random() * 2 - 1).toFixed(2);
+                const close = (basePrice + Math.random() * 2 - 1).toFixed(2);
+                const high = (Math.max(parseFloat(open), parseFloat(close)) + Math.random()).toFixed(2);
+                const low = (Math.min(parseFloat(open), parseFloat(close)) - Math.random()).toFixed(2);
+                const volume = Math.floor(100000 + Math.random() * 500000);
+                const ret = ((close - open) / open * 100).toFixed(2);
+                html += `<tr><td>${date}</td><td>${open}</td><td>${high}</td><td>${low}</td><td>${close}</td><td>${volume}</td><td>${ret}%</td></tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+
+        // 回测
+        document.getElementById('run-backtest').addEventListener('click', function() {
+            this.disabled = true;
+            this.textContent = '回测中...';
+
+            setTimeout(() => {
+                document.getElementById('backtest-result').classList.remove('hidden');
+                this.disabled = false;
+                this.textContent = '🚀 开始回测';
+                drawICChart();
+            }, 2000);
+        });
+
+        function drawICChart() {
+            const chartDom = document.getElementById('ic-chart');
+            if (!chartDom) return;
+
+            if (icChart) icChart.dispose();
+            icChart = echarts.init(chartDom);
+
+            const dates = [];
+            const icData = [];
+            let cumReturn = 0;
+            const returnData = [];
+
+            for (let i = 0; i < 50; i++) {
+                const month = String(Math.floor(i / 4) + 1).padStart(2, '0');
+                dates.push(`2024-${month}`);
+                icData.push(((Math.random() - 0.4) * 0.06).toFixed(4));
+                cumReturn += (Math.random() - 0.45) * 2;
+                returnData.push(cumReturn.toFixed(2));
+            }
+
+            icChart.setOption({
+                title: [
+                    { text: 'IC 时间序列', left: '30%', top: '5%', textStyle: { fontSize: 13 } },
+                    { text: '累计收益曲线', left: '75%', top: '5%', textStyle: { fontSize: 13 } }
+                ],
+                tooltip: { trigger: 'axis' },
+                grid: [
+                    { left: '5%', right: '55%', top: '25%', bottom: '10%' },
+                    { left: '55%', right: '5%', top: '25%', bottom: '10%' }
+                ],
+                xAxis: [
+                    { type: 'category', data: dates, gridIndex: 0 },
+                    { type: 'category', data: dates, gridIndex: 1 }
+                ],
+                yAxis: [
+                    { type: 'value', name: 'IC', gridIndex: 0 },
+                    { type: 'value', name: '收益%', gridIndex: 1 }
+                ],
+                series: [
+                    { data: icData, type: 'line', smooth: true, xAxisIndex: 0, yAxisIndex: 0, lineStyle: { color: '#1890ff' }, areaStyle: { color: '#e6f7ff' } },
+                    { data: returnData, type: 'line', smooth: true, xAxisIndex: 1, yAxisIndex: 1, lineStyle: { color: '#52c41a' } }
+                ]
+            });
+        }
+
+        document.getElementById('to-step-4').addEventListener('click', () => goToStep(4));
+        document.getElementById('back-to-3').addEventListener('click', () => goToStep(3));
+
+        // 优化
+        document.getElementById('start-optimize').addEventListener('click', function() {
+            this.disabled = true;
+            this.textContent = '优化中...';
+            document.getElementById('optimize-progress').classList.remove('hidden');
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 10;
+                document.getElementById('progress-fill').style.width = progress + '%';
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    this.disabled = false;
+                    this.textContent = '🚀 开始优化 (20种组合)';
+                    showOptimizeResult();
+                }
+            }, 200);
+        });
+
+        function showOptimizeResult() {
+            document.getElementById('optimize-progress').classList.add('hidden');
+            document.getElementById('optimize-result').classList.remove('hidden');
+            document.getElementById('heatmap-card').classList.remove('hidden');
+            document.getElementById('comparison-card').classList.remove('hidden');
+
+            const heatmap = document.getElementById('heatmap');
+            const windowShorts = [10, 15, 20, 25];
+            const windowLongs = [20, 30, 40, 50, 60];
+
+            let html = '<div class="heatmap-row"><div style="width:60px;"></div>';
+            windowLongs.forEach(w => html += `<div style="width:90px;text-align:center;font-size:12px;color:#666;">${w}</div>`);
+            html += '</div>';
+
+            windowShorts.forEach(ws => {
+                html += '<div class="heatmap-row">';
+                html += `<div style="width:60px;font-size:12px;color:#666;text-align:center;line-height:55px;">${ws}</div>`;
+                windowLongs.forEach(wl => {
+                    const ir = Math.min(0.5, 0.1 + (ws - 10) * 0.012 + (wl - 20) * 0.003 + Math.random() * 0.08);
+                    const isBest = ws === 20 && wl === 40;
+                    const color = ir >= 0.4 ? '#52c41a' : ir >= 0.3 ? '#faad14' : '#ff4d4f';
+                    html += `<div class="heatmap-cell ${isBest ? 'best' : ''}" style="background:${color};color:white;">${ir.toFixed(2)}</div>`;
+                });
+                html += '</div>';
+            });
+
+            heatmap.innerHTML = html;
+        }
+
+        window.addEventListener('resize', () => { if (icChart) icChart.resize(); });
+
+        // ==================== 侧边栏导航 ====================
+        const pageNames = {
+            'factor-lab': '因子实验室',
+            'factor-lib': '因子库',
+            'history': '历史记录',
+            'settings': '设置',
+            'help': '帮助中心'
+        };
+
+        document.querySelectorAll('.sidebar-nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const page = this.dataset.page;
+                document.querySelectorAll('.sidebar-nav-item').forEach(n => n.classList.remove('active'));
+                this.classList.add('active');
+
+                // 更新页面标题
+                document.getElementById('page-title').textContent = pageNames[page] || '因子实验室';
+
+                if (page !== 'factor-lab') {
+                    alert(`「${pageNames[page]}」功能正在开发中，敬请期待！`);
+                    // 切回因子实验室
+                    document.querySelector('[data-page="factor-lab"]').classList.add('active');
+                    document.getElementById('page-title').textContent = '因子实验室';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
