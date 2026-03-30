@@ -724,7 +724,7 @@ if __name__ == '__main__':
                         <button class="btn btn-sm" id="btn-validate">
                             ✅ 验证代码
                         </button>
-                        <button class="btn btn-sm" id="btn-suggest">
+                        <button class="btn btn-sm" id="btn-suggest" onclick="window._showSuggestionModal()">
                             💬 提出修改
                         </button>
                         <button class="btn btn-sm" id="btn-copy">
@@ -1075,36 +1075,6 @@ if __name__ == '__main__':
         </div>
     </div>
 
-    <!-- 修改建议对话框 -->
-    <div class="modal-overlay hidden" id="suggestion-modal">
-        <div class="modal">
-            <div class="modal-header">
-                <span class="modal-title">💬 提出代码修改意见</span>
-                <button class="modal-close" id="close-modal">×</button>
-            </div>
-            <div class="modal-body">
-                <p style="margin-bottom: 12px; color: #666;">描述你对代码的修改要求：</p>
-                <textarea class="suggestion-input" id="suggestion-input" placeholder="例如：
-• 将窗口参数改为 20 和 60
-• 添加止损逻辑
-• 增加平滑处理
-• 修改为做多逻辑"></textarea>
-
-                <div class="suggestion-examples">
-                    <div class="suggestion-examples-title">快速建议（点击使用）：</div>
-                    <span class="suggestion-example" data="将 window_short 改为 15">改 window_short=15</span>
-                    <span class="suggestion-example" data="将 window_long 改为 60">改 window_long=60</span>
-                    <span class="suggestion-example" data="添加 5 日平滑处理">添加平滑</span>
-                    <span class="suggestion-example" data="修改为正相关（做多逻辑）">改为做多</span>
-                    <span class="suggestion-example" data="增加止损逻辑，跌破 2% 时止损">添加止损</span>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancel-suggestion">取消</button>
-                <button class="btn btn-primary" id="submit-suggestion">提交修改 →</button>
-            </div>
-        </div>
-    </div>
 
     <!-- LLM 数据代码生成对话框 -->
     <div class="modal-overlay hidden" id="llm-data-modal">
@@ -1757,130 +1727,85 @@ if __name__ == '__main__':
         });
 
         // ==================== 修改建议对话框 ====================
-        const modal = document.getElementById('suggestion-modal');
-        const suggestionInput = document.getElementById('suggestion-input');
+        window._showSuggestionModal = function() {
+            // 移除旧的
+            const old = document.getElementById('_suggestion-wrap');
+            if (old) old.remove();
 
-        // 打开对话框
-        document.getElementById('btn-suggest').addEventListener('click', function() {
-            modal.classList.remove('hidden');
-            suggestionInput.focus();
-        });
-
-        // 关闭对话框
-        function closeModal() {
-            modal.classList.add('hidden');
-            suggestionInput.value = '';
-        }
-
-        document.getElementById('close-modal').addEventListener('click', closeModal);
-        document.getElementById('cancel-suggestion').addEventListener('click', closeModal);
-
-        // 点击遮罩关闭
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) closeModal();
-        });
-
-        // 快速建议点击
-        document.querySelectorAll('.suggestion-example').forEach(btn => {
-            btn.addEventListener('click', function() {
-                suggestionInput.value = this.dataset;
-            });
-        });
-
-        // 提交修改建议
-        document.getElementById('submit-suggestion').addEventListener('click', async function() {
-            const suggestion = suggestionInput.value.trim();
-            if (!suggestion) {
-                alert('请输入修改意见');
-                return;
-            }
-
-            const originalCode = document.getElementById('code-editor').value;
-            if (!originalCode || originalCode.includes('请先生成因子代码')) {
-                alert('没有可修改的代码');
-                return;
-            }
-
-            closeModal();
-
-            // 显示代码对话
-            const codeChat = document.getElementById('code-chat');
-            codeChat.classList.remove('hidden');
-
-            // 添加用户消息
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'code-chat-msg';
-            msgDiv.innerHTML = `
-                <div class="code-chat-role user">你</div>
-                <div class="code-chat-content">${suggestion}</div>
-            `;
-            codeChat.appendChild(msgDiv);
-
-            // 显示 AI 响应
-            const aiDiv = document.createElement('div');
-            aiDiv.className = 'code-chat-msg';
-            aiDiv.innerHTML = `
-                <div class="code-chat-role ai">AI</div>
-                <div class="code-chat-content">
-                    <div class="loading" style="padding: 8px 0;">
-                        <div class="spinner"></div>
-                        <span>正在根据你的建议修改代码...</span>
+            const wrap = document.createElement('div');
+            wrap.id = '_suggestion-wrap';
+            wrap.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+            wrap.innerHTML = `
+                <div style="background:white;border-radius:12px;width:90%;max-width:520px;padding:0;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+                    <div style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
+                        <strong>💬 提出代码修改意见</strong>
+                        <button id="_suggestion-close" style="border:none;background:none;font-size:22px;cursor:pointer;color:#999;line-height:1;">×</button>
+                    </div>
+                    <div style="padding:20px;">
+                        <textarea id="_suggestion-input" style="width:100%;height:100px;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;resize:none;box-sizing:border-box;" placeholder="描述你的修改要求，如：将窗口参数改为20和60"></textarea>
+                    </div>
+                    <div style="padding:12px 20px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:10px;">
+                        <button id="_suggestion-cancel" style="padding:6px 16px;border:1px solid #ddd;border-radius:6px;background:white;cursor:pointer;">取消</button>
+                        <button id="_suggestion-submit" style="padding:6px 16px;border:none;border-radius:6px;background:#1890ff;color:white;cursor:pointer;">提交修改 →</button>
                     </div>
                 </div>
             `;
-            codeChat.appendChild(aiDiv);
-            codeChat.scrollTop = codeChat.scrollHeight;
+            document.body.appendChild(wrap);
 
-            try {
-                // 调用后端 API 修改代码
-                const response = await fetch(API_BASE + '/api/factor/modify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        original_code: originalCode,
-                        suggestion: suggestion,
-                        class_name: currentClassName || 'Factor'
-                    })
-                });
-                const data = await response.json();
+            // 关闭
+            function close() { wrap.remove(); }
+            document.getElementById('_suggestion-close').onclick = close;
+            document.getElementById('_suggestion-cancel').onclick = close;
+            wrap.onclick = function(e) { if (e.target === wrap) close(); };
 
-                if (data.success && data.code) {
-                    // 更新代码编辑器
-                    codeEditor.value = data.code;
-                    currentFactorCode = data.code;
-                    codeModified = true;
-                    codeValidated = false;
-                    document.getElementById('run-result')?.classList.add('hidden');
-                    updateCodeStatus();
-                    document.getElementById('btn-save-code').style.display = 'inline-block';
+            // 提交
+            document.getElementById('_suggestion-submit').onclick = async function() {
+                const suggestion = document.getElementById('_suggestion-input').value.trim();
+                if (!suggestion) { alert('请输入修改意见'); return; }
+                const originalCode = document.getElementById('code-editor').value;
+                if (!originalCode || originalCode.includes('请先生成因子代码')) { alert('没有可修改的代码'); return; }
+                close();
 
-                    // 更新 AI 消息
-                    aiDiv.innerHTML = `
-                        <div class="code-chat-role ai">AI</div>
-                        <div class="code-chat-content" style="background: #f6ffed; border-color: #b7eb8f; color: #52c41a;">
-                            ✅ 已根据你的建议修改代码！请点击"验证代码"确认无误后继续。
-                        </div>
-                    `;
-                } else {
-                    aiDiv.innerHTML = `
-                        <div class="code-chat-role ai">AI</div>
-                        <div class="code-chat-content" style="background: #fff2f0; border-color: #ffccc7; color: #ff4d4f;">
-                            ❌ 修改失败: ${data.error || '未知错误'}
-                        </div>
-                    `;
+                const codeChat = document.getElementById('code-chat');
+                codeChat.classList.remove('hidden');
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'code-chat-msg';
+                msgDiv.innerHTML = `<div class="code-chat-role user">你</div><div class="code-chat-content">${suggestion}</div>`;
+                codeChat.appendChild(msgDiv);
+
+                const aiDiv = document.createElement('div');
+                aiDiv.className = 'code-chat-msg';
+                aiDiv.innerHTML = `<div class="code-chat-role ai">AI</div><div class="code-chat-content"><div class="loading" style="padding:8px 0;"><div class="spinner"></div><span>正在根据你的建议修改代码...</span></div></div>`;
+                codeChat.appendChild(aiDiv);
+                codeChat.scrollTop = codeChat.scrollHeight;
+
+                try {
+                    const response = await fetch(API_BASE + '/api/factor/modify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ original_code: originalCode, suggestion: suggestion, class_name: currentClassName || 'Factor' })
+                    });
+                    const data = await response.json();
+                    if (data.success && data.code) {
+                        codeEditor.value = data.code;
+                        currentFactorCode = data.code;
+                        codeModified = true;
+                        codeValidated = false;
+                        document.getElementById('run-result')?.classList.add('hidden');
+                        updateCodeStatus();
+                        document.getElementById('btn-save-code').style.display = 'inline-block';
+                        aiDiv.innerHTML = `<div class="code-chat-role ai">AI</div><div class="code-chat-content" style="background:#f6ffed;border-color:#b7eb8f;color:#52c41a;">✅ 已根据你的建议修改代码！请点击"验证代码"确认无误后继续。</div>`;
+                    } else {
+                        aiDiv.innerHTML = `<div class="code-chat-role ai">AI</div><div class="code-chat-content" style="background:#fff2f0;border-color:#ffccc7;color:#ff4d4f;">❌ 修改失败: ${data.error || '未知错误'}</div>`;
+                    }
+                } catch (error) {
+                    aiDiv.innerHTML = `<div class="code-chat-role ai">AI</div><div class="code-chat-content" style="background:#fff2f0;border-color:#ffccc7;color:#ff4d4f;">❌ 修改失败: ${error.message}</div>`;
                 }
-            } catch (error) {
-                console.error('修改代码失败:', error);
-                aiDiv.innerHTML = `
-                    <div class="code-chat-role ai">AI</div>
-                    <div class="code-chat-content" style="background: #fff2f0; border-color: #ffccc7; color: #ff4d4f;">
-                        ❌ 修改失败: ${error.message}
-                    </div>
-                `;
-            }
+                codeChat.scrollTop = codeChat.scrollHeight;
+            };
 
-            codeChat.scrollTop = codeChat.scrollHeight;
-        });
+            document.getElementById('_suggestion-input').focus();
+        };
 
         // ==================== 步骤切换 ====================
         function goToStep(step) {

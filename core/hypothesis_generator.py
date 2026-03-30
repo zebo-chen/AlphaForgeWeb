@@ -133,10 +133,11 @@ class HypothesisGenerator:
             content = ""
             print("🤖 ", end="", flush=True)
             for chunk in response:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    delta = chunk.choices[0].delta.content
-                    content += delta
-                    print(delta, end="", flush=True)
+                if chunk.choices:
+                    delta = getattr(chunk.choices[0].delta, 'content', '') or ''
+                    if delta:
+                        content += delta
+                        print(delta, end="", flush=True)
             print()
 
             self.messages.append({"role": "assistant", "content": content})
@@ -261,10 +262,11 @@ class HypothesisGenerator:
             content = ""
             print("🔄 生成中... ", end="", flush=True)
             for chunk in response:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    delta = chunk.choices[0].delta.content
-                    content += delta
-                    print("▌", end="", flush=True)
+                if chunk.choices:
+                    delta = getattr(chunk.choices[0].delta, 'content', '') or ''
+                    if delta:
+                        content += delta
+                        print("▌", end="", flush=True)
             print(" ✓")
             print(content)
 

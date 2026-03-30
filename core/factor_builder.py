@@ -221,8 +221,15 @@ class XXXFactor:
         """从响应中提取代码"""
         code_match = re.search(r'```python\s*(.*?)\s*```', content, re.DOTALL)
         if code_match:
-            return code_match.group(1).strip()
-        return content.strip()
+            code = code_match.group(1).strip()
+        else:
+            # 没有代码块，尝试直接用内容
+            code = content.strip()
+
+        # 确保是完整的类（必须有 class 开头）
+        if not code.startswith('class '):
+            raise ValueError("LLM 返回的内容不是有效的 Python 类代码")
+        return code
 
     def _sanitize_code(self, code: str) -> str:
         """代码安全检查"""
@@ -274,32 +281,42 @@ class XXXFactor:
         Returns:
             修改后的代码
         """
-        modify_prompt = f"""请根据用户的修改建议，修改以下因子代码。
+        system_prompt = """你是一个专业的量化因子代码助手。
 
-【原始代码】
+【核心原则】
+- 用户会给一段完整的因子代码和修改意见
+- 你的任务是在这段代码基础上做【最小改动】
+- 只改与修改建议相关的部分，其他所有代码一字不动保留
+- 输出必须是【完整、可以独立运行】的 Python 类代码
+- 不能删除任何原有方法、注释、import 语句
+- 不能重新生成整个类，只做局部修改"""
+
+        user_prompt = f"""【原始代码（不要删除，只改涉及的部分）】
 ```
 {original_code}
 ```
 
-【修改建议】
+【修改意见】
 {suggestion}
 
-【强制要求】
-1. 必须在上述【原始代码】基础上进行修改，不能重新生成
-2. 只改动与修改建议相关的部分，其他代码原样保留
-3. 保持类名和 calculate 方法签名不变
-4. 确保修改后代码语法正确，能正常执行
-5. 直接输出修改后的完整代码，不需要任何解释
+【输出要求】
+1. 输出完整的 Python 类代码，包含所有原有内容（只改涉及的部分）
+2. 保持 class 定义、__init__、calculate 方法完全不变，只修改方法内部的逻辑
+3. 如果修改涉及参数，在 __init__ 里同步修改
+4. 用```python代码块```包裹输出，不要任何其他文字
 
-请输出修改后的完整代码（用```python包裹）："""
+请输出修改后的完整代码："""
 
         try:
             response = self.client.chat.completions.create(
                 model=self.config.model,
                 max_tokens=self.config.max_tokens,
-                temperature=0.3,
+                temperature=0.1,
                 timeout=self.config.timeout,
-                messages=[{"role": "user", "content": modify_prompt}]
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ]
             )
 
             modified_code = self._parse_code(response.choices[0].message.content)
@@ -310,8 +327,7 @@ class XXXFactor:
 
         except Exception as e:
             print(f"代码修改失败: {e}")
-            # 返回原始代码
-            return original_code
+            raise  # 抛出异常，由调用方处理
 
     def _to_class_name(self, name: str) -> str:
         """将中文/中英混合名称转为驼峰类名"""

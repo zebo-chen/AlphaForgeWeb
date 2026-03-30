@@ -76,7 +76,9 @@ def build_factor():
                 stream=True
             )
             for chunk in stream_response:
-                delta = chunk.choices[0].delta.content or ""
+                if not chunk.choices:
+                    continue
+                delta = getattr(chunk.choices[0].delta, 'content', '') or ''
                 raw_content += delta
                 if len(raw_content) <= 200:
                     yield from log(f"[2/4] {raw_content}")
@@ -123,7 +125,9 @@ def build_factor():
                             stream=True
                         )
                         for chunk in stream_resp2:
-                            delta = chunk.choices[0].delta.content or ""
+                            if not chunk.choices:
+                                continue
+                            delta = getattr(chunk.choices[0].delta, 'content', '') or ''
                             debug_content += delta
                             if len(debug_content) <= 200:
                                 yield from log(f"[3/4] 修复: {debug_content}")
